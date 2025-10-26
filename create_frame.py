@@ -37,7 +37,7 @@ pd.set_option("display.max_colwidth", None)  # 每欄完整顯示
 
 # load data
 parquet_path = "savant_data_14_24.parquet"
-csv_path = "/Users/yantianli/factor-and-defense-factor/statcast_2014_2024.csv"
+csv_path = "/Users/yantianli/factor_and_defense_factor/statcast_2014_2024.csv"
 
 # 如果 parquet 已經存在，就直接讀取；否則讀 csv 並轉換成 parquet
 if os.path.exists(parquet_path):

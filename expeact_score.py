@@ -17,7 +17,7 @@ pd.set_option("display.width", None)         # 不限制總寬度
 pd.set_option("display.max_colwidth", None)  # 每欄完整顯示
 
 
-savant_data_14_24 = pd.read_parquet("/Users/yantianli/factor-and-defense-factor/savant_data_14_24_with_rtheta.parquet")
+savant_data_14_24 = pd.read_parquet("/Users/yantianli/factor_and_defense_factor/savant_data_14_24_with_rtheta.parquet")
 
 
 event_distribution = savant_data_14_24.groupby('r_theta')['events'].value_counts(normalize=True).reset_index()
@@ -72,7 +72,7 @@ def get_expected_dataset():
     提供給其他專案匯入使用。
     回傳：包含 expected_events 的 DataFrame。
     """
-    path = "/Users/yantianli/factor-and-defense-factor/savant_data_14_24_with_expected_selected.parquet"
+    path = "/Users/yantianli/factor_and_defense_factor/savant_data_14_24_with_expected_selected.parquet"
     if not os.path.exists(path):
         raise FileNotFoundError(f"找不到檔案：{path}\n請先執行 expeact_score.py 產生它。")
     return pd.read_parquet(path)
@@ -80,8 +80,8 @@ def get_expected_dataset():
 if __name__ == "__main__":
     # 若是直接執行這支檔案，就自動產生結果並輸出
     print("正在建立 expected_events 的資料集...")
-    save_path = "/Users/yantianli/factor-and-defense-factor/savant_data_14_24_with_expected_selected.parquet"
+    save_path = "/Users/yantianli/factor_and_defense_factor/savant_data_14_24_with_expected_selected.parquet"
     expected_event_df.to_parquet(save_path)
-    print(f"✅ 已輸出結果到：{save_path}")
+    print(f"已輸出結果到：{save_path}")
 
 #%%
