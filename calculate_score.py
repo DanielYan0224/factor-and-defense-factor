@@ -150,33 +150,97 @@ def nonhip_score_tbl(data: pd.DataFrame,
 
     return real_df
 
-cole_nonhip_score = nonhip_score_tbl(get_whole_dataset(),
-                                     year=2019,
-                                     player_mlbid=543037,
-                                     player_type='pitcher')
-cole_expected = hip_score_tbl(
+
+
+def ibb_score_tbl(year: int, 
+                  player_mlbid: int, 
+                  player_type: str,
+                  pitcher_ibb_data: pd.DataFrame = pitcher_data_fg,
+                  batter_ibb_data: pd.DataFrame = batter_data_fg) -> int:
+    """
+    根據 Fangraphs 資料取得指定球員在指定年份的 IBB 數量。
+    假設 MLBAM ID 可透過 reverse_lookup 轉為 Fangraphs ID。
+    """
+    if player_type == 'pitcher':
+        df = pitcher_data_fg
+    elif player_type == 'batter':
+        df = batter_data_fg
+    else:
+        raise ValueError("player_type 必須是 'pitcher' 或 'batter'")
+    
+    # 將 savant 的 player id 轉成 fangraphs
+    fg_id = playerid_reverse_lookup([player_mlbid], key_type='mlbam')\
+        ['key_fangraphs'].values[0]
+
+    # 篩選選手的資料
+    player_data = df[(df['year'] == year) &
+                     (df['fg_id'] == fg_id)]
+    # 回傳 IBB 總數
+    if not player_data.empty and 'IBB' in player_data.columns:
+        return int(player_data['IBB'].sum())
+    else:
+        return 0
+    
+
+def combined_score_tbl(data: pd.DataFrame,
+                       dist_df: pd.DataFrame,
+                       year: int,
+                       player_mlbid: int,
+                       player_type: str,
+                       method: str = 'expectation'):
+    """
+    結合：
+      - hip_score_tbl（打進場預期與實際）
+      - nonhip_score_tbl（非打進場事件）
+      - ibb_value_tbl（Fangraphs 的 IBB 資料）
+
+    回傳：包含所有事件的完整統計表。
+    """
+    # calculate hip events
+    hip_df = hip_score_tbl(
+        data=data,
+        dist_df=dist_df,
+        year=year,
+        player_mlbid=player_mlbid,
+        player_type=player_type,
+        method=method
+    )
+
+    # calculte nonhip events
+    nonhip_df = nonhip_score_tbl(
+        data=data,
+        year=year,
+        player_mlbid=player_mlbid,
+        player_type=player_type
+    )
+    # add up IBB
+    ibb_value = ibb_score_tbl(year, player_mlbid, player_type)
+    ibb_value_df = pd.DataFrame(
+        [
+            {
+                'events': 'intent_walk',
+                'sum_real_count': ibb_value,
+                'sum_expected_count': ibb_value
+            }
+        ]
+    )
+    # combin whole score
+    
+    combined_df = pd.concat([hip_df, nonhip_df, ibb_value_df], ignore_index=True)
+    combined_df = combined_df.groupby("events", as_index=False)\
+        [["sum_real_count", "sum_expected_count"]].sum()
+    combined_df = combined_df.sort_values('events', ascending=True).reset_index(drop=True)
+    return combined_df
+
+
+cole_score = combined_score_tbl(
     data=get_expected_dataset(),
     dist_df=get_event_distribution(),
     year=2019,
-    player_mlbid=543037,
+    player_mlbid=543037,  # Gerrit Cole
     player_type='pitcher',
-    method='expectation',
-    n_simulations=1000,
-    random_seed = 42
+    method='expectation'
 )
 
-display(cole_nonhip_score)
-display(cole_expected)
-# cole_stimuation = expected_score_tbl(
-#     data=get_expected_dataset(),
-#     dist_df=get_event_distribution(),
-#     year=2019,
-#     player_mlbid=543037,
-#     player_type='pitcher',
-#     method='sampling',
-#     n_simulations = 1000,
-#     random_seed = 42
-# )
-
-
+display(cole_score)
 #%%

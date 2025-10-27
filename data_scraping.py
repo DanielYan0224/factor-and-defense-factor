@@ -5,9 +5,7 @@ from pybaseball import statcast
 import os
 
 
-data  = pd.read_csv("/Users/yantianli/Downloads/savant_data_2.csv")
-print(len(data))
-#%%
+
 # pd.set_option('display.max_rows', None)  # 顯示所有行
 # pd.set_option('display.max_columns', None)  # 顯示所有列
 # pd.set_option('display.width', None)  # 自動調整寬度以適應內容
