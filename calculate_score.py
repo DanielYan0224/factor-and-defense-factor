@@ -8,27 +8,28 @@ import numpy as np
 
 from pybaseball import playerid_reverse_lookup
 
-from expect_score import get_expected_dataset, get_event_distribution, get_whole_dataset
+import joblib
 
-display(get_expected_dataset()['events'].value_counts())
-#%%
+
+from expect_score import get_whole_dataset, get_truncated_dataset, get_rtheta_prob_tbl
+
+
 # import fangrph data for batter and p
 pitcher_data_fg = pd.read_csv('/Users/yantianli/factor_and_defense_factor/fg_pitcher.csv')
 batter_data_fg = pd.read_csv('/Users/yantianli/factor_and_defense_factor/fg_batter.csv')
 
-# add year column
-pitcher_data_fg.insert(1, 'year', pd.to_datetime(pitcher_data_fg['game_date'], errors='coerce').dt.year)
-batter_data_fg.insert(1, 'year', pd.to_datetime(batter_data_fg['game_date'], errors='coerce').dt.year)
-
-
+# add game_year column
+pitcher_data_fg.insert(1, 'game_year', pd.to_datetime(pitcher_data_fg['game_date'], errors='coerce').dt.year)
+batter_data_fg.insert(1, 'game_year', pd.to_datetime(batter_data_fg['game_date'], errors='coerce').dt.year)
+#%%
 def hip_score_tbl(data: pd.DataFrame, 
-                      dist_df: pd.DataFrame, 
-                      year: int, 
-                      player_mlbid, 
-                      player_type: str,
-                      method: str = 'expectation',
-                      n_simulations: int= 1000,
-                      random_seed: int = 42):
+                    dist_df: pd.DataFrame, 
+                    year: int, 
+                    player_mlbid, 
+                    player_type: str,
+                    method: str = 'expectation',
+                    n_simulations: int= 1000,
+                    random_seed: int = 42):
     """
     計算球員的 expected score。
     method 可選：
@@ -37,7 +38,7 @@ def hip_score_tbl(data: pd.DataFrame,
     """
 
     df = data[
-        (data['year'] == year) & 
+        (data['game_year'] == year) & 
         (data['game_type'] == 'R')&
         (data['description'] == 'hit_into_play')
     ].copy()
@@ -132,7 +133,7 @@ def nonhip_score_tbl(data: pd.DataFrame,
     """
     # 篩選出沒有打進場的 data 
     df = data[
-        (data['year'] == year) & 
+        (data['game_year'] == year) & 
         (data['game_type'] == 'R') &
         (data['description'] != 'hit_into_play')
     ].copy()
@@ -174,7 +175,7 @@ def ibb_score_tbl(year: int,
         ['key_fangraphs'].values[0]
 
     # 篩選選手的資料
-    player_data = df[(df['year'] == year) &
+    player_data = df[(df['game_year'] == year) &
                      (df['fg_id'] == fg_id)]
     # 回傳 IBB 總數
     if not player_data.empty and 'IBB' in player_data.columns:
@@ -237,9 +238,9 @@ def combined_score_tbl(data: pd.DataFrame,
 
 
 cole_score = combined_score_tbl(
-    data=get_whole_dataset(),
-    dist_df=get_event_distribution(),
-    year=2019,
+    data=get_truncated_dataset(),
+    dist_df=get_rtheta_prob_tbl(),
+    year=2022,
     player_mlbid=592450,  # Judge
     player_type='batter',
     method='expectation'

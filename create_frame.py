@@ -1,6 +1,7 @@
 #%%
 import pandas as pd
 import os
+import joblib
 
 from IPython.display import display
 import pandas as pd
@@ -15,31 +16,65 @@ pd.set_option("display.width", None)         # 不限制總寬度
 pd.set_option("display.max_colwidth", None)  # 每欄完整顯示
 
 
-# load data
-parquet_path = "savant_data_14_24.parquet"
-csv_path = "//Users/yantianli/factor_and_defense_factor/savant_14_24.csv"
+base_dir = r"/Users/yantianli/factor_and_defense_factor"
+# all_data = []
 
-# 如果 parquet 已經存在，就直接讀取；否則讀 csv 並轉換成 parquet
-if "savant_data_14_24" not in globals():
-    parquet_path = "savant_data_14_24.parquet"
-    if os.path.exists(parquet_path):
-        print("讀取Parquet中")
-        savant_data_14_24 = pd.read_parquet(parquet_path)
+# for year in range(2014, 2025):
+#     if year == 2020:  # 跳過2020
+#         continue
+#     file_path = os.path.join(base_dir, f"statcast_{year}.csv")
+
+#     if os.path.exists(file_path):
+#         print(f"讀取中: {file_path}")
+#         df = pd.read_csv(file_path)
+#         df["year"] = year  # 加上年份欄位以免混淆
+#         all_data.append(df)
+#     else:
+#         print(f"找不到檔案: {file_path}")
+
+# # 合併所有年份資料
+# merged_df = pd.concat(all_data, ignore_index=True)
+
+merged_path = os.path.join(base_dir, "savant_data_14_24.parquet")
+#merged_df.to_parquet(merged_path)
+
+
+df = pd.read_parquet(merged_path)
+
+
+mask = ['pitch_type', 'game_date', 'batter', 'pitcher', 'events', 'description',
+        'game_type', 'home_team', 'away_team', 'game_year',
+        'launch_speed', 'launch_angle']
+df = df[mask]
+
+
+df.to_parquet('/Users/yantianli/factor_and_defense_factor/truncated_data.parquet')
+
+def load_savant_data_with_rtheta():
+    parquet_path = "/Users/yantianli/factor_and_defense_factor/truncated_data.parquet"
+    cache_path = "/Users/yantianli/factor_and_defense_factor/truncated_data.pkl"
+
+    # 若 cache 存在就直接載入
+    if os.path.exists(cache_path):
+        print("從快取讀取中...")
+        df = joblib.load(cache_path)
     else:
-        print("讀取原始 CSV 並轉換中...")
-        savant_data_14_24 = pd.read_csv(csv_path)
-        savant_data_14_24.to_parquet(parquet_path)
-        print("已建立 Parquet 快取檔案。")
+        print("讀取 parquet 並建立快取...")
+        df = pd.read_parquet(parquet_path)
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        joblib.dump(df, cache_path)
+        print(f"已經建立快取檔")
+    return df
 
-    print(f"共讀入 {len(savant_data_14_24):,} 筆資料。")
 
-# sample 100比資料的測試檔
-sample_data = savant_data_14_24.sample(n=2000, random_state=42)
+# judge_df = df[(df['batter'] == 592450)&
+#             (df['gayear'] == 2018)]
+# print(judge_df['events'].value_counts())
 
-# 可用sample_data to do test
-data = savant_data_14_24.copy()
 
-df = data.copy()
+df = load_savant_data_with_rtheta()
+
+
 # 資料整理
 sorted_df = df[
     (df["description"] == "hit_into_play") # 球被擊出
@@ -66,11 +101,19 @@ sorted_df["r_theta"] = "r" + sorted_df["r_bin"].astype(str) + "_t" + sorted_df["
 
 
 
-savant_data_14_24.loc[sorted_df.index, ["r_bin", "theta_bin", "r_theta"]] = \
+df.loc[sorted_df.index, ["r_bin", "theta_bin", "r_theta"]] = \
     sorted_df[["r_bin", "theta_bin", "r_theta"]]
 
+output_path = "/Users/yantianli/factor_and_defense_factor/truncated_data_with_rtheta.parquet"
+cache_path  = "/Users/yantianli/factor_and_defense_factor/truncated_data_with_rtheta.pkl"
 
-savant_data_14_24.to_parquet("savant_data_14_24_with_rtheta.parquet")
+# 輸出 parquet
+df.to_parquet(output_path)
+print(f"已輸出 parquet：{output_path}")
+
+# 建立快取
+joblib.dump(df, cache_path)
+print(f"已建立快取檔：{cache_path}")
 #%%
 # # 建立顏色對照
 # unique_events = sorted_df["events"].dropna().unique()

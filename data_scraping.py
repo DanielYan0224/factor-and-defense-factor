@@ -11,7 +11,7 @@ import os
 # pd.set_option('display.width', None)  # 自動調整寬度以適應內容
 # pd.set_option('display.max_colwidth', None)  # 不限制單個列的最大寬度
  
-year = 2024
+year = 2014
   # 可調整年份範圍
 # 建立月份區間（每月抓一次）
 months = [
