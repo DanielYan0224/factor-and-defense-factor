@@ -1,8 +1,0 @@
-{
-  "editor.tokenColorCustomizations": {
-    "comments": {
-      "fontStyle": "italic",
-      "foreground": "#9CDCFE"
-    }
-  }
-}

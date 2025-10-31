@@ -35,9 +35,40 @@ rtheta_prob_tbl = df.groupby('r_theta')['events'].value_counts(normalize=True).r
 rtheta_prob_tbl.columns = ['r_theta', 'events', 'probability']
 rtheta_prob_tbl.to_parquet("/Users/yantianli/factor_and_defense_factor/rtheta_prob_tbl.parquet")
 
-
 # 統一路徑設定
 BASE_DIR = "/Users/yantianli/factor_and_defense_factor"
+
+
+# 建立 batter team and pitcher team 的 cols
+def assign_pitcher_batter_teams(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    根據每一列的 inning_topbot 欄位，指派 pitcher_team 與 batter_team。
+
+    參數:
+    ----------
+    df : pd.DataFrame
+        原始 Statcast DataFrame，必須包含 'inning_topbot', 'home_team', 'away_team' 欄位。
+
+    回傳:
+    ----------
+    pd.DataFrame
+        加入 'pitcher_team' 和 'batter_team' 欄位的新 DataFrame。
+    """
+    df = df.copy()
+    df['pitcher_team'] = np.where(df['inning_topbot'] == 'Top', df['home_team'], df['away_team'])
+    df['batter_team']  = np.where(df['inning_topbot'] == 'Top', df['away_team'], df['home_team'])
+    
+    # 更改 pitcher team and batter team 的位置
+    cols = list(df.columns)
+    insert_pos = cols.index('away_team') + 1  # 想放在 away_team 後面
+    for col in ['pitcher_team', 'batter_team']:
+        cols.remove(col)
+        cols.insert(insert_pos, col)
+        insert_pos += 1
+    df = df[cols]
+
+    return df
+
 
 def get_whole_dataset():
     """回傳完整的 Parquet 主資料集"""
@@ -46,16 +77,10 @@ def get_whole_dataset():
         raise FileNotFoundError(f"找不到完整資料集：{path}")
     print(f"載入完整資料：{path}")
     return pd.read_parquet(path)
-# 讀取 只有特定 cols 的 dataset
-#['pitch_type', 'game_date', 'batter', 'pitcher', 'events', 'description',
-# 'game_type', 'home_team', 'away_team', 'game_year',
-# 'launch_speed', 'launch_angle']
+
+# 讀取特定 cols 的 dataset
 def get_truncated_dataset():
     """回傳只含主要欄位的 truncated 資料
-        ['pitch_type', 'game_date', 'batter', 'pitcher', 'events', 
-        'description',
-       'game_type', 'home_team', 'away_team', 'game_year',
-       'launch_speed', 'launch_angle']
     """
     path = os.path.join(BASE_DIR, "truncated_data_with_rtheta.parquet")
     if not os.path.exists(path):
@@ -74,11 +99,14 @@ def get_rtheta_prob_tbl():
     return pd.read_parquet(path)
 
 
+df = assign_pitcher_batter_teams(get_truncated_dataset())
+df.to_parquet("/Users/yantianli/factor_and_defense_factor/truncated_data_with_rtheta_team.parquet")
 
-
-
-
-
-
-
+def get_truncated_dataset_with_team():
+    """回傳 tuncated data with rtheta and batter/pitcher team"""
+    path = os.path.join(BASE_DIR, "truncated_data_with_rtheta_team.parquet")
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"找不到 truncated 資料：{path}")
+    print(f"📦 載入 truncated 資料：{path}")
+    return pd.read_parquet(path)
 #%%

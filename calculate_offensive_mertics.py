@@ -10,6 +10,7 @@ from expect_score import get_truncated_dataset, get_rtheta_prob_tbl, get_whole_d
 from calculate_score import combined_score_tbl
 
 
+
 def cal_pa_ab(df: pd.DataFrame,
               col: str = 'sum_real_count'):
     """
@@ -62,8 +63,8 @@ def cal_pa_ab(df: pd.DataFrame,
 
     return round(pa, 4), round(ab, 4)
 
-def cal_ba(df: pd.DataFrame,
-           col: str = 'sum_real_count'):
+def cal_ba(df: pd.DataFrame, 
+        col: str = 'sum_real_count'):
     """
     Parameters:
     combined_df (pd.DataFrame): 包含 'events' 和 'sum_real_count' 或 'sum_expected_count' 的 DataFrame。
@@ -75,7 +76,7 @@ def cal_ba(df: pd.DataFrame,
 
     # Calculte AB
     _, ab = cal_pa_ab(df, col)
-   
+
     # 確保數據為數值類型，並填補 NaN 為 0
     df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
@@ -215,6 +216,7 @@ judge_df = combined_score_tbl(
     player_mlbid=592450,
     player_type='batter'
 )
+
 
 babip = cal_babip(judge_df, 'sum_real_count')
 display(f"Judge {year_search} 年的 OBP is {babip}")

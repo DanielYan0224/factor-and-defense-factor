@@ -42,8 +42,10 @@ merged_path = os.path.join(base_dir, "savant_data_14_24.parquet")
 df = pd.read_parquet(merged_path)
 
 
-mask = ['pitch_type', 'game_date', 'batter', 'pitcher', 'events', 'description',
-        'game_type', 'home_team', 'away_team', 'game_year',
+mask = ['pitch_type', 'game_type',
+        'game_date', 'game_year', 
+        'batter', 'pitcher', 'events', 'description', 
+        'inning_topbot', 'home_team', 'away_team',
         'launch_speed', 'launch_angle']
 df = df[mask]
 
@@ -85,7 +87,6 @@ sorted_df = sorted_df.dropna(subset=['launch_angle', 'launch_speed'], how='any')
 # 把 launch_speed > 120 的值改成 120
 sorted_df.loc[sorted_df["launch_speed"] > 120, "launch_speed"] = 120
 
-#
 # 設定格線區間
 speed_bins = np.arange(0, 121, 3)  # 0 到 120，每3單位一格
 angle_bins = np.arange(-90, 91, 3)  # -90 到 90，每3單位一格
@@ -106,6 +107,7 @@ df.loc[sorted_df.index, ["r_bin", "theta_bin", "r_theta"]] = \
 
 output_path = "/Users/yantianli/factor_and_defense_factor/truncated_data_with_rtheta.parquet"
 cache_path  = "/Users/yantianli/factor_and_defense_factor/truncated_data_with_rtheta.pkl"
+
 
 # 輸出 parquet
 df.to_parquet(output_path)
