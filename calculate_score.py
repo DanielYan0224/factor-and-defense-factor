@@ -6,22 +6,47 @@ from IPython.display import display
 import pandas as pd
 import numpy as np
 
-from pybaseball import playerid_reverse_lookup
+from pybaseball import playerid_reverse_lookup, batting_stats, pitching_stats
 
 import joblib
 
 
 from expect_score import get_whole_dataset, get_truncated_dataset, get_rtheta_prob_tbl
 
+# all_years = []
+# for year in range(2014, 2025):
+#     print(f"下載 Fangraphs 打者資料：{year}")
+#     try:
+#         df = pitching_stats(year, qual=0)
+#         df["Season"] = year
+#         all_years.append(df)
+#     except Exception as e:
+#         print(f"⚠️ {year} 年資料抓取失敗：{e}")
 
-# import fangrph data for batter and p
-pitcher_data_fg = pd.read_csv('/Users/yantianli/factor_and_defense_factor/fg_pitcher.csv')
-batter_data_fg = pd.read_csv('/Users/yantianli/factor_and_defense_factor/fg_batter.csv')
+# pitcher_data_fg = pd.concat(all_years, ignore_index=True)
+# pitcher_data_fg.rename(columns={'Season': 'game_year', 'IBB': 'Intent_walk'}, inplace=True)
+# pitcher_data_fg= pitcher_data_fg[['IDfg', 'game_year', 'Intent_walk']]
+# pitcher_data_fg.to_csv("/Users/yantianli/factor_and_defense_factor/fg_pitching.csv", index=False)
 
-# add game_year column
-pitcher_data_fg.insert(1, 'game_year', pd.to_datetime(pitcher_data_fg['game_date'], errors='coerce').dt.year)
-batter_data_fg.insert(1, 'game_year', pd.to_datetime(batter_data_fg['game_date'], errors='coerce').dt.year)
-#%%
+# all_years = []
+# for year in range(2014, 2025):
+#     print(f"下載 Fangraphs 打者資料：{year}")
+#     try:
+#         df = batting_stats(year, qual=0)
+#         df["Season"] = year
+#         all_years.append(df)
+#     except Exception as e:
+#         print(f"⚠️ {year} 年資料抓取失敗：{e}")
+
+# batter_data_fg = pd.concat(all_years, ignore_index=True)
+# batter_data_fg.rename(columns={'Season': 'game_year', 'IBB': 'Intent_walk'}, inplace=True)
+# batter_data_fg = batter_data_fg[['IDfg', 'game_year', 'Intent_walk']]
+# batter_data_fg.to_csv("/Users/yantianli/factor_and_defense_factor/fg_batting.csv", index=False)
+
+batter_data_fg = pd.read_csv("/Users/yantianli/factor_and_defense_factor/fg_batting.csv")
+pitcher_data_fg = pd.read_csv("/Users/yantianli/factor_and_defense_factor/fg_pitching.csv")
+
+
 def hip_score_tbl(data: pd.DataFrame, 
                     dist_df: pd.DataFrame, 
                     year: int, 
@@ -100,7 +125,7 @@ def hip_score_tbl(data: pd.DataFrame,
         simulation_results.append(sim_counts)
 
 
-        # 將所有模擬結果合併成 DataFrame
+    # 將所有模擬結果合併成 DataFrame
       sim_df = pd.concat(simulation_results, axis=1).fillna(0)
       sim_df['expected_count'] = sim_df.mean(axis=1)
       new_df = sim_df.reset_index().rename(columns={'index': 'events'})
@@ -155,28 +180,37 @@ def nonhip_score_tbl(data: pd.DataFrame,
 
 
 def ibb_score_tbl(year: int, 
-                  player_mlbid: int, 
-                  player_type: str,
-                  pitcher_ibb_data: pd.DataFrame = pitcher_data_fg,
-                  batter_ibb_data: pd.DataFrame = batter_data_fg) -> int:
+                player_mlbid: int, 
+                player_type: str,
+                pitcher_data: pd.DataFrame = pitcher_data_fg,
+                batter_data: pd.DataFrame = batter_data_fg) -> int:
     """
     根據 Fangraphs 資料取得指定球員在指定年份的 IBB 數量。
     假設 MLBAM ID 可透過 reverse_lookup 轉為 Fangraphs ID。
     """
     if player_type == 'pitcher':
-        df = pitcher_data_fg
+        df = pitcher_data
     elif player_type == 'batter':
-        df = batter_data_fg
+        df = batter_data
     else:
         raise ValueError("player_type 必須是 'pitcher' 或 'batter'")
     
+    player_mlbid = int(player_mlbid)
+
     # 將 savant 的 player id 轉成 fangraphs
-    fg_id = playerid_reverse_lookup([player_mlbid], key_type='mlbam')\
-        ['key_fangraphs'].values[0]
+    lookup_fgid = playerid_reverse_lookup([player_mlbid], key_type='mlbam')
+
+    # playerid_reverse_lookup([player_mlbid], key_type='mlbam')\
+    #     ['key_fangraphs'].values[0]
+    if not isinstance(lookup_fgid, pd.DataFrame) or lookup_fgid.empty or 'key_fangraphs' not in lookup_fgid.columns:
+        print(f"⚠️ 無法找到 MLB ID {player_mlbid} 對應的 Fangraphs ID，IBB 設為 0。")
+        return 0
+
+    fg_id = lookup_fgid['key_fangraphs'].values[0]
 
     # 篩選選手的資料
     player_data = df[(df['game_year'] == year) &
-                     (df['fg_id'] == fg_id)]
+                    (df['fg_id'] == fg_id)]
     # 回傳 IBB 總數
     if not player_data.empty and 'IBB' in player_data.columns:
         return int(player_data['IBB'].sum())
@@ -185,16 +219,18 @@ def ibb_score_tbl(year: int,
     
 
 def combined_score_tbl(data: pd.DataFrame,
-                       dist_df: pd.DataFrame,
-                       year: int,
-                       player_mlbid: int,
-                       player_type: str,
-                       method: str = 'expectation'):
+                    dist_df: pd.DataFrame,
+                    year: int,
+                    player_mlbid: int,
+                    player_type: str,
+                    method: str = 'expectation',
+                    pitcher_data: pd.DataFrame = pitcher_data_fg,
+                    batter_data: pd.DataFrame = batter_data_fg):
     """
     結合：
-      - hip_score_tbl（打進場預期與實際）
-      - nonhip_score_tbl（非打進場事件）
-      - ibb_value_tbl（Fangraphs 的 IBB 資料）
+    - hip_score_tbl（打進場預期與實際）
+    - nonhip_score_tbl（非打進場事件）
+    - ibb_value_tbl（Fangraphs 的 IBB 資料）
 
     回傳：包含所有事件的完整統計表。
     """
@@ -216,7 +252,11 @@ def combined_score_tbl(data: pd.DataFrame,
         player_type=player_type
     )
     # add up IBB
-    ibb_value = ibb_score_tbl(year, player_mlbid, player_type)
+    ibb_value = ibb_score_tbl(year, 
+                            player_mlbid, 
+                            player_type,
+                            pitcher_data = pitcher_data_fg,
+                            batter_data = batter_data_fg)
     ibb_value_df = pd.DataFrame(
         [
             {
@@ -237,14 +277,17 @@ def combined_score_tbl(data: pd.DataFrame,
 
 
 
-cole_score = combined_score_tbl(
-    data=get_truncated_dataset(),
-    dist_df=get_rtheta_prob_tbl(),
-    year=2022,
-    player_mlbid=592450,  # Judge
-    player_type='batter',
-    method='expectation'
-)
 
-display(cole_score)
+
+
+# cole_score = combined_score_tbl(
+#     data=get_truncated_dataset(),
+#     dist_df=get_rtheta_prob_tbl(),
+#     year=2022,
+#     player_mlbid=592450,  # Judge
+#     player_type='batter',
+#     method='expectation'
+# )
+
+# display(cole_score)
 #%%
