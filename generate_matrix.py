@@ -17,7 +17,6 @@ dist_df = get_rtheta_prob_tbl()
 bat_df = get_team_score("bat")
 pitch_df = get_team_score("pitch")
 park_df = get_team_score("park")
-
 league_summary_tbl = get_league_tbl()
 
 
@@ -31,16 +30,67 @@ df.insert(new_batter_tm_col, 'batter_team', batter_tm_col) #type: ignore
 df.insert(new_pitcher_tm_col, 'pitcher_team', pitcher_tm_col) #type: ignore
 
 
-def generate_home_park_defense(
-            pitcher_data:pd.DataFrame,
-            park_data:pd.DataFrame,
-            league_tbl:pd.DataFrame,
-            metric:str,
-            yr:int):
+# 計算打線在其他park作客的年度結果
+def generate_away_park_defense_eqn(
+        data:pd.DataFrame,
+        batter_data:pd.DataFrame,
+        league_tbl:pd.DataFrame,
+        metric:str,
+        yr:int):
     
-    pitcher
-#%%
-def generate_park_equ(
+    # 只保留例行賽的 data
+    df = data[data['game_type'] == 'R'].copy()
+    tm_list = df['away_team'].unique()
+    # ---- 計算聯盟整體校正值 ----
+    league_correction = (
+        league_tbl.loc[league_tbl['Year']==yr, f'ex_{metric}'].values[0] 
+                        - league_tbl.loc[league_tbl['Year']==yr, f'real_{metric}'].values[0]
+    )
+    away_eqns = {}
+    for tm in tm_list:
+
+        # 打線在客場作戰的hit into play的年度 data frame
+        away_hip_df = data[
+            (data['game_year'] == yr)&
+            (data['away_team'] == tm)&
+            (data['batter_team'] == tm)&
+            (data['description'] == 'hit_into_play')] 
+        if len(away_hip_df) == 0:
+            continue
+        # 各主場的打進場次數
+        ratio_away_play = (
+            away_hip_df.groupby('home_team')['description']
+            .count()
+            .reset_index(name='hip_count')
+        )
+
+        # 計算比例並正規化
+        ratio_away_play['ratio'] = ratio_away_play['hip_count'] / ratio_away_play['hip_count'].sum()
+        ratio_away_play['ratio'] = ratio_away_play['ratio'].round(4)
+        ratio_away_play['ratio'] /= ratio_away_play['ratio'].sum()
+
+        # ---- 計算最終 y 值 ----
+        # 計算球隊校正值
+        batter_row = batter_data.loc[
+            (batter_data["Team"] == tm) & (batter_data["Year"] == yr)
+        ]
+        park_correction = batter_row[f'ex_{metric}'].values[0] - batter_row[f'real_{metric}'].values[0]
+
+        y_value = park_correction - league_correction
+
+        # ----- 建立方程式： y = yearfactor + base_term + summation coeff * defense_team -----
+        base_term = f"park_factor_{tm}_{yr}"
+        terms = [f"{row['ratio']:.4f} * defense_{row['home_team']}_{yr}" 
+                for _, row in ratio_away_play.iterrows()]
+        year_factor = "year_factor"
+        # 組合成完整方程
+        eq = f"{y_value:.4f} = {year_factor} + {base_term} + " + " + ".join(terms)
+        away_eqns[tm] = eq
+    return away_eqns
+
+
+
+def generate_park_eqn(
             data:pd.DataFrame,
             park_data:pd.DataFrame,
             league_tbl:pd.DataFrame,
@@ -72,14 +122,14 @@ def generate_park_equ(
         if total_play == 0:
             continue
 
-        # 計算各隊在該主場的打進場比例
+        #----- 計算各隊在該主場的打進場比例 -----
         away_play_count = (
             home_team_df.groupby('batter_team')['description']
             .count()
             .reset_index(name='play_count')
         )
 
-        # 轉成比例並正規化
+        # 轉成比例
         away_play_count['ratio'] = away_play_count['play_count'] / away_play_count['play_count'].sum()
 
         # Round & Normalize
@@ -106,47 +156,113 @@ def generate_park_equ(
 
     return park_eqns
 
+def generate_home_park_defense_eqn(
+            pitch_data:pd.DataFrame,
+            league_tbl:pd.DataFrame,
+            metric:str,
+            yr:int):
+    
+    # ---- 計算聯盟整體校正值 ----
+    league_correction = (
+        league_tbl.loc[league_tbl['Year']==yr, f'ex_{metric}'].values[0] 
+                        - league_tbl.loc[league_tbl['Year']==yr, f'real_{metric}'].values[0]
+    )
+    team_pk_def_eqns = {}
 
-park_eqs = generate_park_equ(
-        data=get_truncated_dataset_with_team(),
-        park_data=get_tm_park_score(),
-        league_tbl=get_league_tbl(),
-        metric="SLG",
-        yr=2024)
+    # ---- 計算球隊校正值 ----
+    for tm in pitch_data['Team'].unique():
 
-def display_park_equations(eq_dict: dict):
-    """以數學方程式的樣式印出所有球隊結果"""
-    print("=== Park Factor Equations ===")
-    for _, eq in eq_dict.items():
-        dp(f"{eq}")
+        pitch_row = pitch_data.loc[
+            (pitch_data["Team"] == tm) & (pitch_data["Year"] == yr)
+        ]
+        park_correction = pitch_row[f'ex_{metric}'].values[0] - pitch_row[f'real_{metric}'].values[0]
+
+        # ---- 計算最終 y 值 ----
+        y_value = park_correction - league_correction
+
+        # -----建立方程式： y = year_factor + park_factor + defense_factor -----
+        pk_factor_term = f"park_factor_{tm}_{yr}"
+        tm_defense_term = f"defense_{tm}_{yr}"
+        year_factor = "year_factor"
+        # 組合方程式
+        eq = f"{y_value:.4f} = {year_factor} + {pk_factor_term} + {tm_defense_term}"
+        team_pk_def_eqns[tm] = eq
+    return team_pk_def_eqns
+
+def collect_eqns(
+        data: pd.DataFrame,
+        park_data: pd.DataFrame,
+        pitch_data: pd.DataFrame,
+        batter_data: pd.DataFrame,
+        league_tbl: pd.DataFrame,
+        metric: str,
+        yr:int):
+    
+    """
+    統一生成某年度的三種類型方程式：
+    - 球場因子方程式（park factor）
+    - 主場防守方程式（home defense）
+    - 客場打線方程式（away offense）
+    """
+    year_park_eqs = generate_park_eqn(
+        data=data,
+        park_data=park_data,
+        league_tbl=league_tbl,
+        metric=metric,
+        yr=yr)
+    
+    year_home_defense_eqs = generate_home_park_defense_eqn(
+        pitch_data=pitch_data,
+        league_tbl=league_tbl,
+        metric=metric,
+        yr=yr)
+    
+    year_away_offense_eqs = generate_away_park_defense_eqn(
+    data = data,  
+    batter_data=batter_data,
+    league_tbl=league_tbl,
+    metric=metric,
+    yr=yr)
+
+    return {
+        "park_factor": year_park_eqs,
+        "home_defense": year_home_defense_eqs,
+        "away_offense": year_away_offense_eqs
+    }
 
 
+# eqs_2024 = collect_eqns(
+#     data=df,
+#     park_data=park_df,
+#     pitch_data=pitch_df,
+#     batter_data=bat_df,
+#     league_tbl=league_summary_tbl,
+#     metric='SLG',
+#     yr=2024
+# )
+
+# dp(eqs_2024)
+# park_eqs = generate_park_eqn(
+#         data=df,
+#         park_data=park_df,
+#         league_tbl=get_league_tbl(),
+#         metric="SLG",
+#         yr=2024)
+
+# home_defense_eqs = generate_home_park_defense_eqn(
+#     pitch_data=pitch_df,
+#     league_tbl=get_league_tbl(),
+#     metric='SLG',
+#     yr=2024
+# )
 
 
-
-
-
-
+# away_offense_eqs = generate_away_park_defense_eqn(
+#     data = df,  
+#     batter_data=bat_df,
+#     league_tbl=league_summary_tbl,
+#     metric='SLG',
+#     yr=2024
+# )
 #display_park_equations(park_eqs)
-#%%
-# def generate_tm_park_defense(data:pd.DataFrame,
-#                             data_2:pd.DataFrame,
-#                             metric:str,
-#                             yr:int):
-#     """
-#     計算在洋基球場的pf跟洋基的defense factor
-#     """
-#     data = 
-
-# if __name__ == "__main__":
-#     equations = generate_park_equ(data=get_truncated_dataset_with_team(),
-#                                   park_data= get_tm_park_score(),
-#                                   league_tbl= get_league_tbl(),
-#                                   metric="SLG", 
-#                                   yr=2024)
-#     for team, eq in equations.items():
-#         print(eq)
-
-
-
 #%%
