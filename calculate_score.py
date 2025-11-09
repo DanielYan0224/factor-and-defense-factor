@@ -47,7 +47,7 @@ batter_data_fg = pd.read_csv("/Users/yantianli/factor_and_defense_factor/fg_batt
 pitcher_data_fg = pd.read_csv("/Users/yantianli/factor_and_defense_factor/fg_pitching.csv")
 
 
-def hip_score_tbl(data: pd.DataFrame, 
+def hip_score_tbl(data: pd.DataFrame,
                     dist_df: pd.DataFrame, 
                     year: int, 
                     player_mlbid, 
@@ -150,7 +150,7 @@ def hip_score_tbl(data: pd.DataFrame,
 def nonhip_score_tbl(data: pd.DataFrame, 
                     year: int, 
                     player_mlbid, 
-                    player_type: str,):
+                    player_type: str):
     """
     計算指定球員在指定年度的真實事件分布表。
     回傳：

@@ -15,7 +15,6 @@ rtheta_distri = get_rtheta_prob_tbl()
 df = df[df['game_type'] == 'R']
 
 
-
 # 2014 沒有 la and ls 
 #print(df[df['game_year'] == 2015].sample(10))
 
@@ -90,7 +89,7 @@ for yr in [y for y in year if y != 2014]:
             data = df,
             dist_df = rtheta_distri,
             year = yr,
-            player_type = 'pitcher',
+            player_type = 'batter',
             method = 'expectation',
             pitcher_data = pitcher_data_fg,
             batter_data = batter_data_fg
