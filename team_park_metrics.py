@@ -94,22 +94,22 @@ for summary_type in ["batting", "pitching", "park"]:
 # 輸出 CSV 檔案
 if batting_summary:
     batting_df = pd.DataFrame(batting_summary)
-    bat_save_path = "/Users/yantianli/factor_and_defense_factor/team_bat_tbl.csv"
+    bat_save_path = "/Users/yantianli/factor-and-defense-factor/team_bat_tbl.csv"
     batting_df.to_csv(bat_save_path, index=False)
     print(f"成功儲存球隊打擊成績：{bat_save_path}")
 if pitching_summary:
     pitching_df = pd.DataFrame(pitching_summary)
-    pitch_save_path = "/Users/yantianli/factor_and_defense_factor/team_pitch_tbl.csv"
+    pitch_save_path = "/Users/yantianli/factor-and-defense-factor/team_pitch_tbl.csv"
     pitching_df.to_csv(pitch_save_path, index=False)
     print(f"成功儲存球隊投手成績：{pitch_save_path}")
 if park_summary:
     park_df = pd.DataFrame(park_summary)
-    park_save_path = "/Users/yantianli/factor_and_defense_factor/team_park_tbl.csv"
+    park_save_path = "/Users/yantianli/factor-and-defense-factor/team_park_tbl.csv"
     park_df.to_csv(park_save_path, index=False)
     print(f"成功儲存球場成績：{park_save_path}")
 
 
-BASE_DIR_tm = "/Users/yantianli/factor_and_defense_factor/"
+BASE_DIR_tm = "/Users/yantianli/factor-and-defense-factor/"
 def get_team_score(score_type: str):
     """
     score_type 可為 'bat', 'pitch', 'park'

@@ -15,9 +15,8 @@ pd.set_option("display.max_columns", None)   # 欄不要省略
 pd.set_option("display.width", None)         # 不限制總寬度
 pd.set_option("display.max_colwidth", None)  # 每欄完整顯示
 
-# 讀取parquet and cache
-parquet_path = "/Users/yantianli/factor_and_defense_factor/truncated_data_with_rtheta.parquet"
-cache_path = "/Users/yantianli/factor_and_defense_factor/_cache/savant_data_cache.pkl"
+parquet_path = "/Users/yantianli/factor-and-defense-factor/truncated_data_with_rtheta.parquet"
+cache_path = "/Users/yantianli/factor-and-defense-factor/_cache/savant_data_cache.pkl"
 
 if os.path.exists(cache_path):
     print("從快取讀取主資料中...")
@@ -33,10 +32,10 @@ else:
 # 建立每一個 r theta of  hip 的 events 的 機率 table
 rtheta_prob_tbl = df.groupby('r_theta')['events'].value_counts(normalize=True).reset_index()
 rtheta_prob_tbl.columns = ['r_theta', 'events', 'probability']
-rtheta_prob_tbl.to_parquet("/Users/yantianli/factor_and_defense_factor/rtheta_prob_tbl.parquet")
+rtheta_prob_tbl.to_parquet("/Users/yantianli/factor-and-defense-factor/rtheta_prob_tbl.parquet")
 
 # 統一路徑設定
-BASE_DIR = "/Users/yantianli/factor_and_defense_factor"
+BASE_DIR = "/Users/yantianli/factor-and-defense-factor"
 
 
 # 建立 batter team and pitcher team 的 cols
@@ -100,7 +99,7 @@ def get_rtheta_prob_tbl():
 
 
 df = assign_pitcher_batter_teams(get_truncated_dataset())
-df.to_parquet("/Users/yantianli/factor_and_defense_factor/truncated_data_with_rtheta_team.parquet")
+df.to_parquet("/Users/yantianli/factor-and-defense-factor/truncated_data_with_rtheta_team.parquet")
 
 def get_truncated_dataset_with_team():
     """回傳 tuncated data with rtheta and batter/pitcher team"""

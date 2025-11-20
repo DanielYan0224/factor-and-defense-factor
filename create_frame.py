@@ -35,7 +35,7 @@ base_dir = r"/Users/yantianli/factor-and-defense-factor"
 # # 合併所有年份資料
 # merged_df = pd.concat(all_data, ignore_index=True)
 
-# merged_path = os.path.join(base_dir, "savant_data_14_24.parquet")
+merged_path = os.path.join(base_dir, "savant_data_14_24.parquet")
 # merged_df.to_parquet(merged_path)
 
 

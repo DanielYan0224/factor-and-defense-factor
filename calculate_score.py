@@ -15,7 +15,7 @@ from expect_score import get_whole_dataset, get_truncated_dataset, get_rtheta_pr
 
 # all_years = []
 # for year in range(2014, 2025):
-#     print(f"下載 Fangraphs 打者資料：{year}")
+#     print(f"下載 Fangraphs 投手資料：{year}")
 #     try:
 #         df = pitching_stats(year, qual=0)
 #         df["Season"] = year
@@ -26,7 +26,7 @@ from expect_score import get_whole_dataset, get_truncated_dataset, get_rtheta_pr
 # pitcher_data_fg = pd.concat(all_years, ignore_index=True)
 # pitcher_data_fg.rename(columns={'Season': 'game_year', 'IBB': 'Intent_walk'}, inplace=True)
 # pitcher_data_fg= pitcher_data_fg[['IDfg', 'game_year', 'Intent_walk']]
-# pitcher_data_fg.to_csv("/Users/yantianli/factor_and_defense_factor/fg_pitching.csv", index=False)
+# pitcher_data_fg.to_csv("/Users/yantianli/factor-and-defense-factor/fg_pitching.csv", index=False)
 
 # all_years = []
 # for year in range(2014, 2025):
@@ -41,10 +41,11 @@ from expect_score import get_whole_dataset, get_truncated_dataset, get_rtheta_pr
 # batter_data_fg = pd.concat(all_years, ignore_index=True)
 # batter_data_fg.rename(columns={'Season': 'game_year', 'IBB': 'Intent_walk'}, inplace=True)
 # batter_data_fg = batter_data_fg[['IDfg', 'game_year', 'Intent_walk']]
-# batter_data_fg.to_csv("/Users/yantianli/factor_and_defense_factor/fg_batting.csv", index=False)
+# batter_data_fg.to_csv("/Users/yantianli/factor-and-defense-factor/fg_batting.csv", index=False)
 
-batter_data_fg = pd.read_csv("/Users/yantianli/factor_and_defense_factor/fg_batting.csv")
-pitcher_data_fg = pd.read_csv("/Users/yantianli/factor_and_defense_factor/fg_pitching.csv")
+
+batter_data_fg = pd.read_csv("/Users/yantianli/factor-and-defense-factor/fg_batting.csv")
+pitcher_data_fg = pd.read_csv("/Users/yantianli/factor-and-defense-factor/fg_pitching.csv")
 
 
 def hip_score_tbl(data: pd.DataFrame,
@@ -215,6 +216,7 @@ def ibb_score_tbl(year: int,
     if not player_data.empty and 'IBB' in player_data.columns:
         return int(player_data['IBB'].sum())
     else:
+
         return 0
     
 
