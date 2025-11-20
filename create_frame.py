@@ -16,7 +16,7 @@ pd.set_option("display.width", None)         # 不限制總寬度
 pd.set_option("display.max_colwidth", None)  # 每欄完整顯示
 
 
-base_dir = r"/Users/yantianli/factor_and_defense_factor"
+base_dir = r"/Users/yantianli/factor-and-defense-factor"
 # all_data = []
 
 # for year in range(2014, 2025):
@@ -35,8 +35,10 @@ base_dir = r"/Users/yantianli/factor_and_defense_factor"
 # # 合併所有年份資料
 # merged_df = pd.concat(all_data, ignore_index=True)
 
-merged_path = os.path.join(base_dir, "savant_data_14_24.parquet")
-#merged_df.to_parquet(merged_path)
+# merged_path = os.path.join(base_dir, "savant_data_14_24.parquet")
+# merged_df.to_parquet(merged_path)
+
+
 
 
 df = pd.read_parquet(merged_path)
@@ -50,11 +52,11 @@ mask = ['pitch_type', 'game_type',
 df = df[mask]
 
 
-df.to_parquet('/Users/yantianli/factor_and_defense_factor/truncated_data.parquet')
+df.to_parquet('/Users/yantianli/factor-and-defense-factor/truncated_data.parquet')
 
 def load_savant_data_with_rtheta():
-    parquet_path = "/Users/yantianli/factor_and_defense_factor/truncated_data.parquet"
-    cache_path = "/Users/yantianli/factor_and_defense_factor/truncated_data.pkl"
+    parquet_path = "/Users/yantianli/factor-and-defense-factor/truncated_data.parquet"
+    cache_path = "/Users/yantianli/factor-and-defense-factor/truncated_data.pkl"
 
     # 若 cache 存在就直接載入
     if os.path.exists(cache_path):
@@ -107,8 +109,8 @@ sorted_df["r_theta"] = "r" + sorted_df["r_bin"].astype(str) + "_t" + sorted_df["
 df.loc[sorted_df.index, ["r_bin", "theta_bin", "r_theta"]] = \
     sorted_df[["r_bin", "theta_bin", "r_theta"]]
 
-output_path = "/Users/yantianli/factor_and_defense_factor/truncated_data_with_rtheta.parquet"
-cache_path  = "/Users/yantianli/factor_and_defense_factor/truncated_data_with_rtheta.pkl"
+output_path = "/Users/yantianli/factor-and-defense-factor/truncated_data_with_rtheta.parquet"
+cache_path  = "/Users/yantianli/factor-and-defense-factor/truncated_data_with_rtheta.pkl"
 
 
 # 輸出 parquet
