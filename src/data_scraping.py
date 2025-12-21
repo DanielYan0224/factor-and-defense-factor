@@ -4,6 +4,7 @@ from pybaseball import statcast
 
 import os
 
+from pathlib import Path
 
 
 # pd.set_option('display.max_rows', None)  # 顯示所有行
@@ -11,7 +12,7 @@ import os
 # pd.set_option('display.width', None)  # 自動調整寬度以適應內容
 # pd.set_option('display.max_colwidth', None)  # 不限制單個列的最大寬度
  
-year = 2024
+year = 2020
   # 可調整年份範圍
 # 建立月份區間（每月抓一次）
 months = [
@@ -25,6 +26,7 @@ months = [
     ("10-01", "10-31"),
     ("11-01", "11-30"),
 ]
+
 
 # 儲存所有月份的資料
 all_data = []
@@ -41,5 +43,14 @@ for start, end in months:
 # 合併成一個 DataFrame
 data = pd.concat(all_data, ignore_index=True)
 
-data.to_csv(f"statcast_{year}.csv", index=False)
+current_file_path = Path(__file__).resolve()
+
+project_root = current_file_path.parent.parent
+
+save_dir = project_root / "data" / "raw"
+print(save_dir)
+
+file_path = save_dir / f"statcast_{year}.csv"
+print(f"正在存檔至：{file_path}")
+data.to_csv(file_path, index=False)
 #%%

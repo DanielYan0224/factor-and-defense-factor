@@ -3,12 +3,14 @@ import pandas as pd
 import os
 import joblib
 
-from IPython.display import display
+from IPython.display import display as dp
 import pandas as pd
 import numpy as np
 
 import matplotlib.pyplot as plt
 from matplotlib import colors as mcolors
+
+from pathlib import Path
 
 pd.set_option("display.max_rows", None)      # 列不要省略
 pd.set_option("display.max_columns", None)   # 欄不要省略
@@ -16,28 +18,47 @@ pd.set_option("display.width", None)         # 不限制總寬度
 pd.set_option("display.max_colwidth", None)  # 每欄完整顯示
 
 
-base_dir = r"/Users/yantianli/factor-and-defense-factor"
-# all_data = []
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_RAW = BASE_DIR / "data" / "raw"
+DATA_PROCESSED = BASE_DIR / "data" / "processed"
+FIGURES_DIR = BASE_DIR / "figures"
 
-# for year in range(2014, 2025):
-#     if year == 2020:  # 跳過2020
-#         continue
-#     file_path = os.path.join(base_dir, f"statcast_{year}.csv")
+# check if folder exists
+DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
+FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
-#     if os.path.exists(file_path):
-#         print(f"讀取中: {file_path}")
-#         df = pd.read_csv(file_path)
-#         df["year"] = year  # 加上年份欄位以免混淆
-#         all_data.append(df)
-#     else:
-#         print(f"找不到檔案: {file_path}")
+# path of merged data
+merged_path = DATA_PROCESSED / "savant_data_14_24.parquet"
 
-# # 合併所有年份資料
-# merged_df = pd.concat(all_data, ignore_index=True)
+if merged_path.exists():
+    print(f"已存在合併檔: {merged_path}, 直接讀取")
+    df = pd.read_parquet(merged_path)
+else: 
+    print(f"merge data not found, start to merge")
+    all_data = []
 
-merged_path = os.path.join(base_dir, "savant_data_14_24.parquet")
-# merged_df.to_parquet(merged_path)
+    for year in range(2014, 2025):
+        file_path = DATA_RAW / f"statcast_{year}.csv"
 
+        if file_path.exists():
+            print(f"讀取中: {file_path}")
+            df = pd.read_csv(file_path)
+            df["year"] = year  # 加上年份欄位以免混淆
+            all_data.append(df)
+        else:
+            print(f"找不到檔案: {file_path}")
+
+    # 合併所有年份資料
+    if all_data:
+        merged_df = pd.concat(all_data, ignore_index=True)
+
+        # 存到 processed 資料夾
+        merged_path = DATA_PROCESSED / "savant_data_14_24.parquet"
+        
+        print(f"正在寫入合併檔: {merged_path}")
+        merged_df.to_parquet(merged_path)
+    else:
+        print("沒有讀到任何資料, please check folder data/raw ")
 
 
 
@@ -52,33 +73,17 @@ mask = ['pitch_type', 'game_type',
 df = df[mask]
 
 
-df.to_parquet('/Users/yantianli/factor-and-defense-factor/truncated_data.parquet')
+df.to_parquet(DATA_PROCESSED / "truncated_data.parquet")
 
-def load_savant_data_with_rtheta():
-    parquet_path = "/Users/yantianli/factor-and-defense-factor/truncated_data.parquet"
-    cache_path = "/Users/yantianli/factor-and-defense-factor/truncated_data.pkl"
 
-    # 若 cache 存在就直接載入
-    if os.path.exists(cache_path):
-        print("從快取讀取中...")
-        df = joblib.load(cache_path)
-    else:
-        print("讀取 parquet 並建立快取...")
-        df = pd.read_parquet(parquet_path)
-        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-        joblib.dump(df, cache_path)
-        print(f"已經建立快取檔")
-    return df
 
+
+df = pd.read_parquet(DATA_PROCESSED / "truncated_data.parquet")
 
 # judge_df = df[(df['batter'] == 592450)&
-#             (df['gayear'] == 2018)]
+#             (df['game_year'] == 2018)]
 # print(judge_df['events'].value_counts())
-
-
-df = load_savant_data_with_rtheta()
-
-
+#%%
 # 資料整理
 sorted_df = df[
     (df["description"] == "hit_into_play") # 球被擊出
