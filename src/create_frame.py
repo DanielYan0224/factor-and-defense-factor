@@ -83,91 +83,81 @@ df = pd.read_parquet(DATA_PROCESSED / "truncated_data.parquet")
 # judge_df = df[(df['batter'] == 592450)&
 #             (df['game_year'] == 2018)]
 # print(judge_df['events'].value_counts())
-#%%
-# 資料整理
-sorted_df = df[
-    (df["description"] == "hit_into_play") # 球被擊出
-    & (df["game_type"] == "R") # regular season
-].copy()
-#刪除掉沒有 launch_angle 或 launch_speed
-sorted_df = sorted_df.dropna(subset=['launch_angle', 'launch_speed'], how='any')
+def add_rtheta_features(df):
+    """
+    計算 launch_speed 和 launch_angle 的分箱，並新增 r_theta 欄位。
+    注意：只有 'hit_into_play' 且 'Regular Season' 的資料會有值，
+    其他的列在這些欄位會是 NaN。
+    """
+    print("正在計算 radius-theta binning...")
 
+    mask = (df["description"] == "hit_into_play") & (df["game_type"] == "R")
+    
+    # 取出要處理的子集
+    work_df = df.loc[mask, ['launch_speed', 'launch_angle']].copy()
+    
+    # 刪除缺失值 (這會導致 work_df 的列數變少)
+    work_df = work_df.dropna(subset=['launch_angle', 'launch_speed'], how='any')
 
-# 把 launch_speed > 120 的值改成 120
-sorted_df.loc[sorted_df["launch_speed"] > 120, "launch_speed"] = 120
+    # --- 資料處理邏輯 ---
+    
+    # 把 launch_speed > 120 的值改成 120 (Clip)
+    work_df["launch_speed"] = work_df["launch_speed"].clip(upper=120)
 
-# 設定格線區間
-speed_bins = np.arange(0, 121, 3)  # 0 到 120，每3單位一格
-angle_bins = np.arange(-90, 91, 3)  # -90 到 90，每3單位一格
+    # 設定格線區間
+    speed_bins = np.arange(0, 121, 3)
+    angle_bins = np.arange(-90, 91, 3)
 
-# 分箱
-sorted_df["r_bin"] = pd.cut(sorted_df["launch_speed"], bins=speed_bins, # type: ignore
-                            labels=False, include_lowest=True) # type: ignore
-sorted_df["theta_bin"] = pd.cut(sorted_df["launch_angle"], bins=angle_bins, # type: ignore
-                                labels=False, include_lowest=True) # type: ignore
+    # 分箱 (Binning)
+    work_df["r_bin"] = pd.cut(work_df["launch_speed"], bins=speed_bins, 
+                              labels=False, include_lowest=True)
+    work_df["theta_bin"] = pd.cut(work_df["launch_angle"], bins=angle_bins, 
+                                  labels=False, include_lowest=True)
 
-# 合併成 r_theta 標籤
-sorted_df["r_theta"] = "r" + sorted_df["r_bin"].astype(str) + "_t" + sorted_df["theta_bin"].astype(str)
+    # 合併成 r_theta 標籤 (例如: r20_t30)
+    work_df["r_theta"] = (
+        "r" + work_df["r_bin"].astype(int).astype(str) + 
+        "_t" + work_df["theta_bin"].astype(int).astype(str)
+    )
 
+    # --- 關鍵：將計算結果合併回原始的大表 df ---
+    # 因為 work_df 是 df 的子集，我們利用 index 來對齊
+    print("combining features...")
+    
+    # 預先建立欄位 (避免 Pandas 碎片化警告)
+    df["r_bin"] = np.nan
+    df["theta_bin"] = np.nan
+    df["r_theta"] = None # 字串欄位通常用 None 初始化
 
+    # 利用 index 更新數值
+    df.loc[work_df.index, ["r_bin", "theta_bin", "r_theta"]] = \
+        work_df[["r_bin", "theta_bin", "r_theta"]]
 
-df.loc[sorted_df.index, ["r_bin", "theta_bin", "r_theta"]] = \
-    sorted_df[["r_bin", "theta_bin", "r_theta"]]
+    return df
 
-output_path = "/Users/yantianli/factor-and-defense-factor/truncated_data_with_rtheta.parquet"
-cache_path  = "/Users/yantianli/factor-and-defense-factor/truncated_data_with_rtheta.pkl"
+# --- 執行區塊 ---
+if __name__ == "__main__":
+    # 1. 讀取 
+    input_path = DATA_PROCESSED / "truncated_data.parquet"
+    
+    if input_path.exists():
+        df = pd.read_parquet(input_path)
+        
+        # 2. 處理特徵
+        df = add_rtheta_features(df)
+        
+        # 3. 存檔 (Pathlib 風格)
+        output_parquet = DATA_PROCESSED / "truncated_data_with_rtheta.parquet"
+        
+        print(f"儲存 Parquet: {output_parquet}")
+        df.to_parquet(output_parquet)
+        
+        # (選用) Pickle 存檔
+        # cache_path = DATA_PROCESSED / "truncated_data_with_rtheta.pkl"
+        # joblib.dump(df, cache_path)
+        # print(f"💾 儲存 Pickle: {cache_path}")
+        
+    else:
+        print(f"找不到輸入檔: {input_path}")
 
-
-# 輸出 parquet
-df.to_parquet(output_path)
-print(f"已輸出 parquet：{output_path}")
-
-# 建立快取
-joblib.dump(df, cache_path)
-print(f"已建立快取檔：{cache_path}")
-
-# 建立顏色對照
-unique_events = sorted_df["events"].dropna().unique()
-colors = plt.cm.get_cmap("hsv", len(unique_events))
-event_to_color = {ev: colors(i) for i, ev in enumerate(unique_events)}
-event_to_color["unknown"] = (0.5, 0.5, 0.5, 0.5)  # 為 NaN 預留顏色
-
-# 填補缺值後 map
-event_colors = sorted_df["events"].fillna("unknown").map(event_to_color)
-event_colors = mcolors.to_rgba_array(event_colors.tolist())
-
-# 移除 unknown 事件
-valid_mask = sorted_df["events"].notna()
-sorted_df = sorted_df[valid_mask]
-event_colors = event_colors[valid_mask]
-
-# 繪圖
-angles = np.deg2rad(sorted_df["launch_angle"])
-radii = sorted_df["launch_speed"]
-area = (radii / radii.max()) * 20
-
-fig = plt.figure(figsize=(8, 6))
-ax = fig.add_subplot(projection='polar')
-sc = ax.scatter(angles, radii, c=event_colors, s=area, alpha=0.7)
-ax.set_thetamin(-90) #type: ignore
-ax.set_thetamax(90) #type: ignore
-
-# # 加上圖例（右側）
-handles = [plt.Line2D([0], [0], marker='o', color='w', label=ev,
-                markerfacecolor=event_to_color[ev], markersize=8)
-            for ev in event_to_color.keys() if ev != "unknown"]
-ax.legend(handles=handles, title='Event', loc='center left', bbox_to_anchor=(1.05, 0.5))
-
-# 加上輔助圓弧線（例：r = 20, 40, 60, 80, 100, 120）
-# 使用既有的 bins
-for r in speed_bins:
-    ax.plot(np.linspace(np.radians(-90), np.radians(90), 200),
-            [r]*200, '-', color='gray', lw=0.5)
-
-for theta in angle_bins:
-    ax.plot(np.radians([theta]*200),
-            np.linspace(0, 120, 200), '-', color='gray', lw=0.5)
-
-
-plt.show()
 #%%
