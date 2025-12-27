@@ -28,8 +28,9 @@ This repository is dedicated to the quantitative analysis of financial factors, 
 ├── results/               # Exported charts and performance reports
 ├── requirements.txt       # Project dependencies
 └── main.py                # Entry point for running the full pipeline
+```
 
-## 🛠 Getting Started
+##  Getting Started
 
 Follow these instructions to set up the project on your local machine.
 
