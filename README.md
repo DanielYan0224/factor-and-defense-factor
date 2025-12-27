@@ -49,3 +49,8 @@ Before you begin, ensure you have the following installed:
    git clone [https://github.com/DanielYan0224/factor-and-defense-factor.git](https://github.com/DanielYan0224/factor-and-defense-factor.git)
    cd factor-and-defense-factor
    ```
+
+2. **Install the required packages:**
+    ```bash
+   pip install -r requirements.txt
+   ```
