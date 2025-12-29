@@ -6,11 +6,6 @@ import numpy as np
 
 from pathlib import Path
 
-pd.set_option("display.max_rows", None)      # 列不要省略
-pd.set_option("display.max_columns", None)   # 欄不要省略
-pd.set_option("display.width", None)         # 不限制總寬度
-pd.set_option("display.max_colwidth", None)  # 每欄完整顯示
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_RAW = BASE_DIR / "data" / "raw"
@@ -70,13 +65,9 @@ df = df[mask]
 df.to_parquet(DATA_PROCESSED / "truncated_data.parquet")
 
 
-
-
 df = pd.read_parquet(DATA_PROCESSED / "truncated_data.parquet")
 
-# judge_df = df[(df['batter'] == 592450)&
-#             (df['game_year'] == 2018)]
-# print(judge_df['events'].value_counts())
+
 def add_rtheta_features(df):
     """
     計算 launch_speed 和 launch_angle 的分箱，並新增 r_theta 欄位。
@@ -145,11 +136,6 @@ if __name__ == "__main__":
         
         print(f"儲存 Parquet: {output_parquet}")
         df.to_parquet(output_parquet)
-        
-        # (選用) Pickle 存檔
-        # cache_path = DATA_PROCESSED / "truncated_data_with_rtheta.pkl"
-        # joblib.dump(df, cache_path)
-        # print(f"💾 儲存 Pickle: {cache_path}")
         
     else:
         print(f"找不到輸入檔: {input_path}")
