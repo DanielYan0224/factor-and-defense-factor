@@ -4,38 +4,42 @@ import numpy as np
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 import os
-
+from typing import Dict
 from IPython.display import display as dp
 
 from expect_score import get_truncated_dataset_with_team, get_rtheta_prob_tbl
 
+weights_slg = {'single': 1.0, 'double': 2.0, 'triple': 3.0, 'home_run': 4.0}
+weights_avg = {'single': 1.0, 'double': 1.0, 'triple': 1.0, 'home_run': 1.0}
 
-prob_df = get_rtheta_prob_tbl()
-prob_pivot = prob_df.pivot(index='r_theta', columns='events', values='probability').fillna(0)
-weights = {'single': 1, 'double': 2, 'triple': 3, 'home_run': 4}
-print(weights.items())
 
-def get_expected_bases_map(metric='slg'):
+
+def get_expected_value_map(weights: Dict[str, float]) -> pd.Series:
     """
-    Generate a mapping from r_theta bin to Expected Value based on metric.
-    metric: 'slg' (Expected Bases), 'avg' (Expected Batting Avg), 'woba' (Linear Weights)
+    根據傳入的權重字典，計算 r_theta 的預期價值。
+    
+    Args:
+        weights: 事件權重字典。
+                 例如: {'single': 1, 'home_run': 4}
     """
+    # 1. 取得機率表
     prob_df = get_rtheta_prob_tbl()
-    # Pivot to have events as columns
-    # Assuming prob_df has columns: r_theta, events, probability
+    
+    # 2. 轉置
     prob_pivot = prob_df.pivot(index='r_theta', columns='events', values='probability').fillna(0)
     
-    # Define weights for SLG (Total Bases)
-    # 1B=1, 2B=2, 3B=3, HR=4
-    weights = {'single': 1, 'double': 2, 'triple': 3, 'home_run': 4}
+    # 3. 計算
+    prob_pivot['expected_value'] = 0.0
     
-    # Calculate expected bases
-    prob_pivot['expected_bases'] = 0.0
     for event, w in weights.items():
         if event in prob_pivot.columns:
-            prob_pivot['expected_bases'] += prob_pivot[event] * w
+            prob_pivot['expected_value'] += prob_pivot[event] * w
+        else:
+            # (選用) 提醒使用者傳了沒用的 key
+            print(f"Warning: there is no '{event}' in the data, ignore this weight.")
             
-    return prob_pivot['expected_bases']
+    return prob_pivot['expected_value']
+
 
 def prepare_regression_data(df, exp_map):
     """

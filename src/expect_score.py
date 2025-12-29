@@ -1,4 +1,4 @@
-#%%
+ㄧ#%%
 import pandas as pd
 import os
 from pathlib import Path
@@ -110,5 +110,5 @@ if __name__ == "__main__":
     print("處理隊伍指派...")
     df_teams = assign_pitcher_batter_teams(df)
     df_teams.to_parquet(OUTPUT_PATH)
-    print(f"✅ 已儲存最終資料：{OUTPUT_PATH}")
+    print(f"已儲存最終資料：{OUTPUT_PATH}")
 #%%
