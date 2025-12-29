@@ -1,12 +1,8 @@
 #%%
 import pandas as pd
 import numpy as np
-import statsmodels.api as sm
 import statsmodels.formula.api as smf
-import os
-
 from IPython.display import display as dp
-
 from expect_score import get_truncated_dataset_with_team, get_rtheta_prob_tbl
 
 
