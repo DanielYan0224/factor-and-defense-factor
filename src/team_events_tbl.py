@@ -2,11 +2,6 @@
 import pandas as pd
 import os
 
-from IPython.display import display as dp
-import pandas as pd
-import numpy as np
-
-from pybaseball import playerid_reverse_lookup, batting_stats, pitching_stats
 from calculate_score import combined_score_tbl, batter_data_fg, pitcher_data_fg
 from expect_score import get_truncated_dataset_with_team, get_rtheta_prob_tbl
 

@@ -1,11 +1,7 @@
 #%%
 import pandas as pd
-import numpy as np
-import os
 
-from IPython.display import display as dp
-
-from expect_score import get_truncated_dataset_with_team, get_rtheta_prob_tbl, get_whole_dataset
+from expect_score import get_truncated_dataset_with_team, get_rtheta_prob_tbl
 from team_park_metrics import get_team_score
 from league_score_tbl import get_league_tbl
 

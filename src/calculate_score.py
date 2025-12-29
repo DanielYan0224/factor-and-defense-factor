@@ -4,8 +4,7 @@ import numpy as np
 from pathlib import Path
 from pybaseball import chadwick_register
 
-# 假設這些是你自己寫的模組，且放在同一個資料夾下
-from expect_score import get_whole_dataset, get_truncated_dataset, get_rtheta_prob_tbl
+from expect_score import get_truncated_dataset, get_rtheta_prob_tbl
 
 # --- 1. 設定路徑管理 ---
 BASE_DIR = Path(__file__).resolve().parent.parent
