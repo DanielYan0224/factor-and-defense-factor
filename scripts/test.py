@@ -1,33 +1,31 @@
 #%%
 
 import pandas as pd
+import numpy as np
 import os
+from tqdm import tqdm
+import argparse
 
 #%%
 
-data_dir = '/neodata/open_dataset/mlb_data'
-
-os.listdir(data_dir)
-
-all_data = []
-
-for year in range(2014, 2025):
-    file_path = os.path.join(data_dir, f'statcast_{year}.csv')
-    df = pd.read_csv(file_path)
-    df['year'] = year  # Add year column to avoid confusion
-    all_data.append(df)
-
-#%%
-
-
-
-
-
+data_dir = '/neodata/open_dataset/mlb_data/preprocessed'
+parquet_filename = 'truncated_data_with_rtheta.parquet'
+file_path = os.path.join(data_dir, parquet_filename)
+df = pd.read_parquet(file_path)
 
 
 #%%
 
+df.info()
 
+
+#%%
+
+df.head()
+
+
+
+#%%
 
 
 
@@ -42,8 +40,6 @@ for year in range(2014, 2025):
 
 
 
-
-
 #%%
 
 
@@ -52,12 +48,7 @@ for year in range(2014, 2025):
 
 
 
-
-
-
 #%%
-
-
 
 
 
