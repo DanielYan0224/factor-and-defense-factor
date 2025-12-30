@@ -1,0 +1,53 @@
+#%%
+
+import pandas as pd
+import os
+from tqdm import tqdm
+import argparse
+from utils import add_rtheta_features
+
+#%%
+
+def main():
+    parser = argparse.ArgumentParser(description="Merge MLB Statcast Data")
+    parser.add_argument('--data_dir', type=str, default='/neodata/open_dataset/mlb_data',
+                        help='Directory containing MLB Statcast CSV files')
+    parser.add_argument('--save_dir', type=str, default='/neodata/open_dataset/mlb_data/preprocessed',
+                        help='Directory to save the merged Parquet file')
+    parser.add_argument('--parquet_filename', type=str, default='savant_data_14_24.parquet',
+                        help='Filename for the merged Parquet file')
+    args = parser.parse_args()
+
+    data_dir = args.data_dir
+    save_dir = args.save_dir
+    parquet_filename = args.parquet_filename
+
+    all_data = []
+
+    for file in tqdm(os.listdir(data_dir)):
+        if file.endswith('.csv'):
+            file_path = os.path.join(data_dir, file)
+            df = pd.read_csv(file_path)
+            year = file.split('_')[-1].split('.')[0]
+            df['year'] = year 
+            all_data.append(df)
+        else:
+            continue
+    
+    merged_df = pd.concat(all_data, ignore_index=True)
+    columns_filtered = ['pitch_type', 'game_type',
+        'game_date', 'game_year', 
+        'batter', 'pitcher', 'events', 'description', 
+        'inning_topbot', 'home_team', 'away_team',
+        'launch_speed', 'launch_angle']
+    merged_df = merged_df[columns_filtered]
+    add_rtheta_df = add_rtheta_features(merged_df)
+    save_path = os.path.join(save_dir, parquet_filename)
+    add_rtheta_df.to_parquet(save_path)
+
+if __name__ == "__main__":
+    main()
+
+
+#%%
+
