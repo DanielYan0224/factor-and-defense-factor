@@ -4,7 +4,7 @@ import pandas as pd
 import os
 from tqdm import tqdm
 import argparse
-from utils import add_rtheta_features
+from utils import add_rtheta_features, assign_pitcher_batter_teams
 
 #%%
 
@@ -42,8 +42,9 @@ def main():
         'launch_speed', 'launch_angle']
     merged_df = merged_df[columns_filtered]
     add_rtheta_df = add_rtheta_features(merged_df)
+    df_teams = assign_pitcher_batter_teams(add_rtheta_df)
     save_path = os.path.join(save_dir, parquet_filename)
-    add_rtheta_df.to_parquet(save_path)
+    df_teams.to_parquet(save_path)
 
 if __name__ == "__main__":
     main()
