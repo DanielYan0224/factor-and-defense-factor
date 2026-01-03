@@ -30,3 +30,22 @@ def add_rtheta_features(df):
         work_df[["r_bin", "theta_bin", "r_theta"]]
 
     return df
+
+
+def assign_pitcher_batter_teams(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    
+    is_top = df['inning_topbot'] == 'Top'
+    df['pitcher_team'] = np.where(is_top, df['home_team'], df['away_team'])
+    df['batter_team'] = np.where(is_top, df['away_team'], df['home_team'])
+    
+    cols = list(df.columns)
+    if 'away_team' in cols:
+        insert_pos = cols.index('away_team') + 1
+        for col in ['pitcher_team', 'batter_team']:
+            if col in cols:
+                cols.remove(col)
+            cols.insert(insert_pos, col)
+            insert_pos += 1
+    
+    return df[cols]     
