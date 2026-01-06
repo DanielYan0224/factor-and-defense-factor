@@ -13,7 +13,6 @@ weights_slg = {'single': 1.0, 'double': 2.0, 'triple': 3.0, 'home_run': 4.0}
 weights_avg = {'single': 1.0, 'double': 1.0, 'triple': 1.0, 'home_run': 1.0}
 
 
-
 def get_expected_value_map(weights: Dict[str, float]) -> pd.Series:
     """
     根據傳入的權重字典，計算 r_theta 的預期價值。
@@ -35,12 +34,20 @@ def get_expected_value_map(weights: Dict[str, float]) -> pd.Series:
         if event in prob_pivot.columns:
             prob_pivot['expected_value'] += prob_pivot[event] * w
         else:
-            # (選用) 提醒使用者傳了沒用的 key
+            # 提醒使用者傳了沒用的 key
             print(f"Warning: there is no '{event}' in the data, ignore this weight.")
             
     return prob_pivot['expected_value']
 
 
+slg_tbl = get_expected_value_map(weights_slg)
+avg_tbl = get_expected_value_map(weights_avg)
+
+combined_tbl = pd.concat([slg_tbl, avg_tbl], axis=1, 
+keys=['Expected_SLG', 'Expected_AVG'])
+
+dp(combined_tbl.sample(10))
+#%%
 def prepare_regression_data(df, exp_map):
     """
     Prepare data for weighted regression:

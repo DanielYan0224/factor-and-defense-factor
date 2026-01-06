@@ -28,7 +28,7 @@ DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
 # path of merged data
-merged_path = DATA_PROCESSED / "savant_data_14_24.parquet"
+merged_path = DATA_PROCESSED / "savant_data_15_24.parquet"
 
 if merged_path.exists():
     print(f"已存在合併檔: {merged_path}, 直接讀取")
@@ -37,7 +37,7 @@ else:
     print(f"merge data not found, start to merge")
     all_data = []
 
-    for year in range(2014, 2025):
+    for year in range(2015, 2025):
         file_path = DATA_RAW / f"statcast_{year}.csv"
 
         if file_path.exists():
@@ -53,7 +53,7 @@ else:
         merged_df = pd.concat(all_data, ignore_index=True)
 
         # 存到 processed 資料夾
-        merged_path = DATA_PROCESSED / "savant_data_14_24.parquet"
+        merged_path = DATA_PROCESSED / "savant_data_15_24.parquet"
         
         print(f"正在寫入合併檔: {merged_path}")
         merged_df.to_parquet(merged_path)
