@@ -9,23 +9,13 @@ import argparse
 #%%
 
 data_dir = '/neodata/open_dataset/mlb_data/preprocessed'
-parquet_filename = 'rtheta_prob_tbl.parquet'
-file_path = os.path.join(data_dir, parquet_filename)
-df = pd.read_parquet(file_path)
-df.head()
+filename = 'truncated_data_with_rtheta_team.parquet'
+#filename = 'rtheta_prob_tbl.parquet'
+df = pd.read_parquet(os.path.join(data_dir, filename))
 
 #%%
 
 df.info()
-
-#%%
-
-
-
-
-#%%
-
-
 
 
 
