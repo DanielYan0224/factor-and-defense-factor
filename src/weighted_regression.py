@@ -40,15 +40,17 @@ def get_expected_value_map(weights: Dict[str, float]) -> pd.Series:
     return prob_pivot['expected_value']
 
 
-slg_tbl = get_expected_value_map(weights_slg)
-avg_tbl = get_expected_value_map(weights_avg)
+# slg_tbl = get_expected_value_map(weights_slg)
+# avg_tbl = get_expected_value_map(weights_avg)
 
-combined_tbl = pd.concat([slg_tbl, avg_tbl], axis=1, 
-keys=['Expected_SLG', 'Expected_AVG'])
+# combined_tbl = pd.concat([slg_tbl, avg_tbl], axis=1, 
+# keys=['Expected_SLG', 'Expected_AVG'])
 
-dp(combined_tbl.sample(10))
-#%%
-def prepare_regression_data(df, exp_map):
+# dp(combined_tbl.sample(10))
+
+def prepare_regression_data(df, 
+                            exp_map: pd.Series, 
+                            weights: Dict[str, float]):
     """
     Prepare data for weighted regression:
     - Filter for Hit Into Play
@@ -65,7 +67,7 @@ def prepare_regression_data(df, exp_map):
     df_bip['expected_metric'] = df_bip['r_theta'].map(exp_map).fillna(0)
 
     # Calculate Real Metric (Total Bases for SLG)
-    event_weights = {'single': 1, 'double': 2, 'triple': 3, 'home_run': 4}
+    event_weights = weights
     df_bip['real_metric'] = df_bip['events'].map(event_weights).fillna(0)
 
     # Aggregate by Game-Team
@@ -107,6 +109,12 @@ def prepare_regression_data(df, exp_map):
     
     return agg_df
 
+df = get_truncated_dataset_with_team()
+exp_map = get_expected_value_map(weights_slg)
+testing_df = prepare_regression_data(df, exp_map, weights_slg)
+
+print(testing_df.sample(10))
+#%%
 def run_year_regression(data, year):
     """
     Run WLS for a specific year and return adjusted coefficients.
