@@ -63,12 +63,12 @@ def prepare_regression_data(df,
     # Using description 'hit_into_play' is safer than mapping events
     df_bip = df[df['description'] == 'hit_into_play'].copy()
 
-    # Map expected values
-    df_bip['expected_metric'] = df_bip['r_theta'].map(exp_map).fillna(0)
-
+    # Map expected total bases
+    df_bip['expected_tb'] = df_bip['r_theta'].map(exp_map).fillna(0)
     # Calculate Real Metric (Total Bases for SLG)
     event_weights = weights
-    df_bip['real_metric'] = df_bip['events'].map(event_weights).fillna(0)
+    df_bip['real_tb'] = df_bip['events'].map(event_weights).fillna(0)
+
 
     # Aggregate by Game-Team
     # We group by game_year, home_team (Park), pitcher_team (Defense), batter_team
@@ -85,23 +85,26 @@ def prepare_regression_data(df,
         group_cols.append('game_date') # Proxy for unique game ID
 
     agg_df = df_bip.groupby(group_cols).agg({
-        'real_metric': 'sum',
-        'expected_metric': 'sum',
+        'real_tb': 'sum',
+        'expected_tb': 'sum',
         'events': 'count' # Weight
     }).reset_index()
     
-    agg_df.rename(columns={'events': 'weight', 'real_metric': 'sum_real', 'expected_metric': 'sum_exp'}, inplace=True)
+    agg_df.rename(columns={'events': 'weight', 'real_tb': 'sum_real_tb', 'expected_tb': 'sum_exp_tb'}, 
+                    inplace=True)
     
+    #print(agg_df.sample(5, random_state=42))
+    print(agg_df.iloc[42222])
     # Filter out empty weights or negligible expected values
     # If sum_exp is 0, we cannot estimate a factor.
     # Expected bases for a full game should be >> 1.
-    agg_df = agg_df[agg_df['sum_exp'] > 1.0].copy()
+    agg_df = agg_df[agg_df['sum_exp_tb'] > 1.0].copy()
     
     # Calculate Y = log(Real / Expected)
     # Use Laplace smoothing (add 0.5) to handle Real=0 (Shutout) and stabilize ratios
     # Real=0, Exp=20 -> log(0.5/20.5) ~ -3.7 (reasonable "bad" game)
     # Real=40, Exp=20 -> log(40.5/20.5) ~ 0.68 (reasonable "good" game)
-    agg_df['log_ratio'] = np.log((agg_df['sum_real'] + 0.5) / (agg_df['sum_exp'] + 0.5))
+    agg_df['log_ratio'] = np.log((agg_df['sum_real_tb'] + 0.5) / (agg_df['sum_exp_tb'] + 0.5))
     
     # Define Park and Defense columns explicitly for formula
     agg_df['park'] = agg_df['home_team']
@@ -110,10 +113,11 @@ def prepare_regression_data(df,
     return agg_df
 
 df = get_truncated_dataset_with_team()
-exp_map = get_expected_value_map(weights_slg)
-testing_df = prepare_regression_data(df, exp_map, weights_slg)
 
-print(testing_df.sample(10))
+exp_map = get_expected_value_map(weights_slg)
+testing_df = prepare_regression_data(df, exp_map, weights_avg)
+
+# check 42222 那場比賽怎麼了
 #%%
 def run_year_regression(data, year):
     """
