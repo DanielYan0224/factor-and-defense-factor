@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 import os
-from utils import get_expected_bases_map, prepare_regression_data, run_year_regression
+from utils import get_expected_bases_map, prepare_regression_data, run_year_regression, Config
 import argparse
 
 #%%
@@ -20,16 +20,27 @@ def main():
                         help='Directory to save regression results')
     parser.add_argument('--output_filename', type=str, default='estimated_factors.csv',
                         help='Filename to save regression results')
+    parser.add_argument('--weights', nargs='+', type=float, default=[1.0, 2.0, 3.0, 4.0],
+                        help='List of weights for [single, double, triple, home_run]')
     args = parser.parse_args()
     
-    data_dir = args.data_dir
-    input_filename = args.input_filename
-    prob_table_filename = args.prob_table
+    current_weights = {
+        'single': args.weights[0],
+        'double': args.weights[1],
+        'triple': args.weights[2],
+        'home_run': args.weights[3]
+    }
 
-    exp_map = get_expected_bases_map(data_dir=data_dir, filename=prob_table_filename)
-    truncated_file_path = os.path.join(data_dir, input_filename)
+    config = Config(
+        weights=current_weights,
+        data_dir=args.data_dir,
+        filename=args.prob_table
+    )
+
+    exp_map = get_expected_bases_map(config=config)
+    truncated_file_path = os.path.join(args.data_dir, args.input_filename)
     df = pd.read_parquet(truncated_file_path)
-    reg_df = prepare_regression_data(df, exp_map)
+    reg_df = prepare_regression_data(df, exp_map, config)
 
     years = sorted(reg_df['game_year'].unique())
     results = []
