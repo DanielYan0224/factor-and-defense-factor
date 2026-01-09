@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import statsmodels.formula.api as smf
+from typing import Dict
 
 def add_rtheta_features(df):
    
@@ -52,32 +53,49 @@ def assign_pitcher_batter_teams(df: pd.DataFrame) -> pd.DataFrame:
     return df[cols]     
 
 
-def get_expected_bases_map(data_dir: str = '/neodata/open_dataset/mlb_data/preprocessed',
-                           filename: str = 'rtheta_prob_tbl.parquet'):
-    """
-    Generate a mapping from r_theta bin to Expected Value based on metric.
-    data_dir: Directory where the probability table is stored.
-    filename: Name of the parquet file containing r_theta probability table.
+class Config:
+    def __init__(
+        self,
+        weights: Dict[str, float] = None,
+        data_dir: str = '/neodata/open_dataset/mlb_data/preprocessed',
+        filename: str = 'rtheta_prob_tbl.parquet'
+    ):
+        if weights is None:
+            self.weights = {
+                'single': 1.0,
+                'double': 2.0,
+                'triple': 3.0,
+                'home_run': 4.0
+            }
+        else:
+            self.weights = weights
+            
+        self.data_dir = data_dir
+        self.filename = filename
+        self.file_path = os.path.join(self.data_dir, self.filename)
+        
+
+def get_expected_bases_map(config: Config):
+                           
+    if not os.path.exists(config.file_path):
+        raise FileNotFoundError(f"Probability table file not found: {config.file_path}")
     
-    Returns a Pandas Series mapping r_theta to expected bases (SLG).
-    """
-    
-    file_path = os.path.join(data_dir, filename)
-    prob_df = pd.read_parquet(file_path)
+    prob_df = pd.read_parquet(config.file_path)
     prob_pivot = prob_df.pivot(index='r_theta', columns='events', values='probability').fillna(0)
-    weights = {'single': 1, 'double': 2, 'triple': 3, 'home_run': 4}
     
     prob_pivot['expected_bases'] = 0.0
-    for event, w in weights.items():
+    for event, w in config.weights.items():
         if event in prob_pivot.columns:
             prob_pivot['expected_bases'] += prob_pivot[event] * w
             
     return prob_pivot['expected_bases']
 
-def prepare_regression_data(df, exp_map):
+def prepare_regression_data(df: pd.DataFrame, 
+                            exp_map: pd.Series,
+                            config: Config):
     df_bip = df[df['description'] == 'hit_into_play'].copy()
     df_bip['expected_metric'] = df_bip['r_theta'].map(exp_map).fillna(0)
-    event_weights = {'single': 1, 'double': 2, 'triple': 3, 'home_run': 4}
+    event_weights = config.weights
     df_bip['real_metric'] = df_bip['events'].map(event_weights).fillna(0)
 
     group_cols = ['game_year', 'home_team', 'pitcher_team', 'batter_team']
