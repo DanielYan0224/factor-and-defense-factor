@@ -3,6 +3,7 @@ import numpy as np
 import os
 import statsmodels.formula.api as smf
 from typing import Dict
+import base64
 
 def add_rtheta_features(df):
    
@@ -175,3 +176,11 @@ def run_year_regression(data, year):
         'park_factors': park_factors,
         'defense_factors': defense_factors
     }
+
+def get_local_image_b64(logos_dir, team_name):
+    file_path = os.path.join(logos_dir, f"{team_name}.png")
+    if not os.path.exists(file_path):
+        return None
+    with open(file_path, "rb") as image_file:
+        encoded = base64.b64encode(image_file.read()).decode('utf-8').replace("\n", "").replace("\r", "")
+    return f"data:image/png;base64,{encoded}"
