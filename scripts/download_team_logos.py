@@ -74,31 +74,31 @@ mlb_logos = {
 
 
 
-# 1. 建立一個叫做 logos 的資料夾
-folder_name = "logos"
-if not os.path.exists(folder_name):
-    os.makedirs(folder_name)
-    print(f"建立資料夾: {folder_name}")
+# # 1. 建立一個叫做 logos 的資料夾
+# folder_name = "logos"
+# if not os.path.exists(folder_name):
+#     os.makedirs(folder_name)
+#     print(f"建立資料夾: {folder_name}")
 
-print("開始下載隊徽...")
+# print("開始下載隊徽...")
 
-# 2. 遍歷字典下載圖片
-for team, url in mlb_logos.items():
-    try:
-        # 取得圖片內容
-        response = requests.get(url, timeout=10)
-        if response.status_code == 200:
-            # 存檔路徑：logos/NYY.png
-            file_path = os.path.join(folder_name, f"{team}.png")
+# # 2. 遍歷字典下載圖片
+# for team, url in mlb_logos.items():
+#     try:
+#         # 取得圖片內容
+#         response = requests.get(url, timeout=10)
+#         if response.status_code == 200:
+#             # 存檔路徑：logos/NYY.png
+#             file_path = os.path.join(folder_name, f"{team}.png")
             
-            with open(file_path, "wb") as f:
-                f.write(response.content)
-            print(f"✅ 下載成功: {team}")
-        else:
-            print(f"❌ 下載失敗 (狀態碼錯誤): {team}")
+#             with open(file_path, "wb") as f:
+#                 f.write(response.content)
+#             print(f"✅ 下載成功: {team}")
+#         else:
+#             print(f"❌ 下載失敗 (狀態碼錯誤): {team}")
             
-    except Exception as e:
-        print(f"⚠️ 下載錯誤: {team} - {e}")
+#     except Exception as e:
+#         print(f"⚠️ 下載錯誤: {team} - {e}")
 
-print("所有圖片處理完成！")
+# print("所有圖片處理完成！")
 #%%
