@@ -13,6 +13,7 @@ weights_slg = {'single': 1.0, 'double': 2.0, 'triple': 3.0, 'home_run': 4.0}
 weights_avg = {'single': 1.0, 'double': 1.0, 'triple': 1.0, 'home_run': 1.0}
 
 
+
 def get_expected_value_map(weights: Dict[str, float]) -> pd.Series:
     """
     根據傳入的權重字典，計算 r_theta 的預期價值。
@@ -90,21 +91,16 @@ def prepare_regression_data(df,
         'events': 'count' # Weight
     }).reset_index()
     
-    agg_df.rename(columns={'events': 'weight', 'real_tb': 'sum_real_tb', 'expected_tb': 'sum_exp_tb'}, 
+    #### 把 tb 改成 count
+    agg_df.rename(columns={'events': 'weight', 'real_tb': 'sum_real_count', 'expected_tb': 'sum_exp_count'}, 
                     inplace=True)
     
-    #print(agg_df.sample(5, random_state=42))
-    print(agg_df.iloc[42222])
     # Filter out empty weights or negligible expected values
     # If sum_exp is 0, we cannot estimate a factor.
     # Expected bases for a full game should be >> 1.
-    agg_df = agg_df[agg_df['sum_exp_tb'] > 1.0].copy()
+    agg_df = agg_df[agg_df['sum_exp_count'] > 1.0].copy()
     
-    # Calculate Y = log(Real / Expected)
-    # Use Laplace smoothing (add 0.5) to handle Real=0 (Shutout) and stabilize ratios
-    # Real=0, Exp=20 -> log(0.5/20.5) ~ -3.7 (reasonable "bad" game)
-    # Real=40, Exp=20 -> log(40.5/20.5) ~ 0.68 (reasonable "good" game)
-    agg_df['log_ratio'] = np.log((agg_df['sum_real_tb'] + 0.5) / (agg_df['sum_exp_tb'] + 0.5))
+    agg_df['log_ratio'] = agg_df['sum_real_count'] - agg_df['sum_exp_count']
     
     # Define Park and Defense columns explicitly for formula
     agg_df['park'] = agg_df['home_team']
@@ -112,13 +108,7 @@ def prepare_regression_data(df,
     
     return agg_df
 
-df = get_truncated_dataset_with_team()
 
-exp_map = get_expected_value_map(weights_slg)
-testing_df = prepare_regression_data(df, exp_map, weights_avg)
-
-# check 42222 那場比賽怎麼了
-#%%
 def run_year_regression(data, year):
     """
     Run WLS for a specific year and return adjusted coefficients.
@@ -200,13 +190,29 @@ def run_year_regression(data, year):
     }
 
 if __name__ == "__main__":
-    print("Loading data...")
+
+    # 1. dict of weights
+    WEIGHT_dict = {
+        "avg": {'single': 1, 'double': 1, 'triple': 1, 'home_run': 1},
+        "slg": {'single': 1, 'double': 2, 'triple': 3, 'home_run': 4},
+        # "woba": {'walk': 0.69, 'single': 0.88, 'double': 1.26, 'triple': 1.6, 'home_run': 2.07}
+    }
+
+    # 2. select weights
+    index = "avg"  
+    chosen_weights = WEIGHT_dict[index]
+
+    # 3. loading data
     df = get_truncated_dataset_with_team()
-    exp_map = get_expected_bases_map()
+    expected_value_map = get_expected_value_map(weights=chosen_weights)
     
+    # 4. prepare regression data
     print("Preparing regression data...")
-    reg_df = prepare_regression_data(df, exp_map)
+    reg_df = prepare_regression_data(df = df, 
+                                    exp_map = expected_value_map, 
+                                    weights = chosen_weights)
     
+    # 5. run regression
     years = sorted(reg_df['game_year'].unique())
     results = []
     
@@ -217,11 +223,8 @@ if __name__ == "__main__":
         res = run_year_regression(reg_df, yr)
         if res:
             results.append(res)
-            # Print sample to verify
-            # print(f"  Intercept: {res['intercept']:.4f}")
-            # print(f"  Sample Park (NYY): {res['park_factors'].get('NYY', 'N/A')}")
             
-    # Save Results to CSV
+    # 6. save results to csv
     # Create rows: Year, Team, ParkFactor, DefenseFactor
     output_rows = []
     for r in results:
@@ -238,10 +241,10 @@ if __name__ == "__main__":
             })
             
     out_df = pd.DataFrame(output_rows)
-    save_path = "/Users/yantianli/factor-and-defense-factor/estimated_factors.csv"
+    save_path = f"/Users/yantianli/factor-and-defense-factor/estimated_factors_via_{index}.csv"
     out_df.to_csv(save_path, index=False)
     print(f"Successfully saved estimated factors to {save_path}")
     
-    # Display snippet
+    # 6. display snippet
     dp(out_df.head())
 #%%
