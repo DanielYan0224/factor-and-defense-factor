@@ -48,6 +48,7 @@ def main():
     for year in years:
         result = run_year_regression(reg_df, year)
         results.append(result)
+    print("Completed regression for all years.")
 
     output = []
     for result in results:

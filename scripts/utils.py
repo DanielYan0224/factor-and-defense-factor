@@ -117,6 +117,7 @@ def prepare_regression_data(df: pd.DataFrame,
     agg_df = agg_df[agg_df['sum_exp'] > 1.0].copy()
     
     agg_df['log_ratio'] = np.log((agg_df['sum_real'] + 0.5) / (agg_df['sum_exp'] + 0.5))
+    agg_df['response'] = agg_df['sum_real'] - agg_df['sum_exp']
     
     agg_df['park'] = agg_df['home_team']
     agg_df['defense'] = agg_df['pitcher_team']
@@ -131,8 +132,9 @@ def run_year_regression(data, year):
     # Fit WLS
     # Model: Y = Beta0 + Park + Defense
     # Statsmodels drops one category (reference) for Park and Defense
-    model = smf.wls("log_ratio ~ C(park) + C(defense)", data=data_yr, weights=data_yr['weight'])
-    res = model.fit()
+    model = smf.wls("response ~ C(park) + C(defense)", data=data_yr, weights=data_yr['weight'])
+    #res = model.fit()
+    res = model.fit_regularized(method='elastic_net', L1_wt=0.1, alpha=0.05)
     
     params = res.params
     
