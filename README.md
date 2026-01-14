@@ -66,25 +66,65 @@ Before you begin, ensure you have the following installed:
    pip install -r requirements.txt
    ```
 
+### Analysis Pipeline Flowchart
+
+```mermaid
+graph TD
+    %% Data Inputs
+    RawCSV[(Raw Statcast CSVs)] --> Step1
+
+    subgraph "Stage 1: Data Preprocessing"
+        Step1[<b>1. Preprocess Raw Data</b><br/>parquet_transform.py] 
+        Step1 --> TruncatedParquet[(Truncated Data Parquet)]
+    end
+
+    subgraph "Stage 2: Statistical Computation"
+        TruncatedParquet --> Step2
+        Step2[<b>2. Generate Prob Table</b><br/>save_prob_table.py]
+        Step2 --> ProbTable[(r,θ Probability Table)]
+        
+        TruncatedParquet --> Step3
+        ProbTable --> Step3
+        Step3[<b>3. Estimate Annual Factors</b><br/>estimate_factors.py]
+        Step3 --> FactorCSV[(Estimated Factors CSV)]
+    end
+
+    subgraph "Stage 3: Assets & Visualization"
+        Step4[<b>4. Download Logos</b><br/>down_load_team_logos.py]
+        Step4 --> LogoFolder[[logos/ Folder]]
+        
+        FactorCSV --> Step5
+        LogoFolder --> Step5
+        Step5[<b>5. Visualize Results</b><br/>factor_trend_chart.py]
+        Step5 --> FinalPlot{Interactive Trend Chart}
+    end
+
+    %% Style Settings
+    style RawCSV fill:#f9f,stroke:#333
+    style FinalPlot fill:#00bfff,stroke:#333,color:#fff
+    style Step3 fill:#ffeb3b,stroke:#333
+
+```
+
 ## Pipeline Execution
 Follow these steps in order to process the data and generate the final factor estimates.
 
 ### 1. Preprocess Raw Data
 Converts raw Statcast CSV files into a consolidated Parquet format and assigns each hit to a specific $(r, \theta)$ grid bin.
    ```bash
-   bash scripts/parquet_transform.sh
+   bash commands/parquet_transform.sh
    ```
 
 ### 2. Generate Probability Table
 Calculates the league-wide empirical probability for every grid bin to establish "expected" outcome baselines.
    ```bash
-   bash scripts/save_prob_table.sh
+   bash commands/save_prob_table.sh
    ```
 
 ### 3. Estimate Annual Factors
 Runs the weighted regression model to calculate Park and Defense factors for each team/year.
    ```bash
-   bash scripts/estimate_factors.sh
+   bash commands/estimate_factors.sh
    ```
 
 ### 4. Download Team Logos
@@ -96,5 +136,5 @@ Scrapes and saves official MLB team logos to the local logos/ directory for use 
 ### 5. Visualize Results
 Generates interactive Plotly charts showing the trend of factors over time, including team logos.
    ```bash
-   bash scripts/factor_trend_chart.sh
+   bash commands/factor_trend_chart.sh
    ```
