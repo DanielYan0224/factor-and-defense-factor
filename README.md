@@ -78,7 +78,7 @@ graph TD
         Step1 --> TruncatedParquet[(Truncated Data Parquet)]
     end
 
-    subgraph "Stage 2: Statistical Computation"
+    subgraph "Stage 2: Estimation"
         TruncatedParquet --> Step2
         Step2[<b>2. Generate Prob Table</b><br/>save_prob_table.py]
         Step2 --> ProbTable[(r,θ Probability Table)]
@@ -89,7 +89,7 @@ graph TD
         Step3 --> FactorCSV[(Estimated Factors CSV)]
     end
 
-    subgraph "Stage 3: Assets & Visualization"
+    subgraph "Stage 3: Visualization"
         Step4[<b>4. Download Logos</b><br/>down_load_team_logos.py]
         Step4 --> LogoFolder[[logos/ Folder]]
         
