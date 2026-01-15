@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export factor="DefenseFactor"
+export factor="ParkFactor"
 
 python scripts/factor_trend_chart.py \
     --factor "$factor" \
