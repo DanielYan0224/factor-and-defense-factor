@@ -95,17 +95,16 @@ def prepare_regression_data(df: pd.DataFrame,
                             exp_map: pd.Series,
                             config: Config):
     df_bip = df[df['description'] == 'hit_into_play'].copy()
+
+    team_mapping = {'ATH': 'OAK'}
+    df_bip['home_team'] = df_bip['home_team'].replace(team_mapping)
+    df_bip['pitcher_team'] = df_bip['pitcher_team'].replace(team_mapping)
+
     df_bip['expected_metric'] = df_bip['r_theta'].map(exp_map).fillna(0)
     event_weights = config.weights
     df_bip['real_metric'] = df_bip['events'].map(event_weights).fillna(0)
 
-    #group_cols = ['game_year', 'home_team', 'pitcher_team', 'batter_team']
     group_cols = ['game_year', 'home_team', 'pitcher_team']
-    
-    # if 'game_pk' in df_bip.columns:
-    #     group_cols.append('game_pk')
-    # else:
-    #     group_cols.append('game_date') 
 
     agg_df = df_bip.groupby(group_cols).agg({
         'real_metric': 'sum',
@@ -115,11 +114,6 @@ def prepare_regression_data(df: pd.DataFrame,
     
     agg_df.rename(columns={'events': 'weight', 'real_metric': 'sum_real', 'expected_metric': 'sum_exp'}, inplace=True)
     
-    #agg_df = agg_df[agg_df['sum_exp'] > 1.0].copy()
-    
-    # agg_df['log_ratio'] = np.log((agg_df['sum_real'] + 0.5) / (agg_df['sum_exp'] + 0.5))
-    # agg_df['response'] = agg_df['sum_real'] - agg_df['sum_exp']
-
     agg_df['avg_residual'] = (agg_df['sum_real'] - agg_df['sum_exp']) / agg_df['weight']
     agg_df['park'] = agg_df['home_team']
     agg_df['defense'] = agg_df['pitcher_team']
