@@ -1,0 +1,58 @@
+{
+  "python.languageServer": "Pylance",
+  "jupyter.interactiveWindow.creationMode": "perFile",
+  "git.autofetch": true,
+  "search.useGlobalIgnoreFiles": true,
+  "interactiveWindow.alwaysScrollOnNewCell": false,
+  "interactiveWindow.promptToSaveOnClose": true,
+  "jupyter.interactiveWindow.textEditor.executeSelection": true,
+  "json.schemaDownload.enable": true,
+  "terminal.integrated.inheritEnv": false,
+  "git.confirmSync": false,
+  "editor.showFoldingControls": "always",
+  "notebook.showFoldingControls": "always",
+  "editor.fontSize": 18,
+  "editor.mouseWheelZoom": true,
+  "editor.foldingStrategy": "indentation",
+  "workbench.colorTheme": "Night Owl",
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.colorCustomizations": {
+    // 設定編輯器背景為極深的藍黑色 (接近 Antigravity 的深邃感)
+    "editor.background": "#000a11",
+    // 順便把側邊欄也變深，才不會覺得只有中間是黑的
+    "sideBar.background": "#000a11",
+    "activityBar.background": "#000a11"
+  },
+  // ↓↓↓ (舊) 這裡控制文字顏色 (斜體、註解) ↓↓↓
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [
+      {
+        "scope": [
+          "comment",
+          "comment.block",
+          "comment.line",
+          "punctuation.definition.comment"
+        ],
+        "settings": {
+          "foreground": "#7fdbca",
+          "fontStyle": "italic"
+        }
+      },
+      {
+        "scope": [
+          "keyword",
+          "storage.type",
+          "storage.modifier",
+          "entity.other.attribute-name",
+          "entity.name.tag",
+          "variable.language",
+          "this.self"
+        ],
+        "settings": {
+          "fontStyle": "italic"
+        }
+      }
+    ]
+  },
+  "window.newWindowProfile": "預設"
+}
