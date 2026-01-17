@@ -12,6 +12,7 @@ from matplotlib import colors as mcolors
 
 from pathlib import Path
 
+
 pd.set_option("display.max_rows", None)      # 列不要省略
 pd.set_option("display.max_columns", None)   # 欄不要省略
 pd.set_option("display.width", None)         # 不限制總寬度
