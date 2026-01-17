@@ -28,10 +28,35 @@ CACHE_PATH = CACHE_DIR / "savant_data_cache.pkl"
 PROB_TBL_PATH = DATA_PROCESSED / "rtheta_prob_tbl.parquet"
 OUTPUT_PATH = DATA_PROCESSED / "truncated_data_with_rtheta_team.parquet"
 
+# # 取得所有年份並排序
+# years = sorted(df['game_year'].unique())
+
+# # 建立一個字典：{2015: {'NYY', 'BOS', ...}, 2016: {...}}
+# teams_by_year = {y: set(df[df['game_year'] == y]['home_team'].unique()) for y in years}
+
+# # 兩兩比對
+# for i in range(len(years) - 1):
+#     y1 = years[i]
+#     y2 = years[i+1]
+    
+#     set1 = teams_by_year[y1]
+#     set2 = teams_by_year[y2]
+    
+#     # 消失的隊伍 (在 y1 有，但 y2 沒了)
+#     disappeared = set1 - set2
+#     # 新增的隊伍 (在 y2 有，但 y1 沒有)
+#     new_added = set2 - set1
+    
+#     if disappeared or new_added:
+#         print(f"--- {y1} -> {y2} 發生變化 ---")
+#         if disappeared:
+#             print(f"  消失: {disappeared}")
+#         if new_added:
+#             print(f"  新增: {new_added}")
 
 def get_whole_dataset():
     """回傳完整的 Parquet 主資料集"""
-    path = DATA_PROCESSED / "savant_data_14_24.parquet"
+    path = DATA_PROCESSED / "savant_data_15_24.parquet"
     if not path.exists():
         raise FileNotFoundError(f"找不到完整資料集：{path}")
     print(f"載入完整資料：{path}")
@@ -98,7 +123,21 @@ if __name__ == "__main__":
         df = get_truncated_dataset()
         joblib.dump(df, CACHE_PATH)
         print(f"已建立快取：{CACHE_PATH}")
-
+    # check and replace team name
+    print("正在統一球隊代號 (ATH -> OAK)...")
+    # 定義需要檢查的欄位 (通常原始資料會有 home_team, away_team)
+    # 如果這時候還沒有 pitcher_team/batter_team，list 裡寫了也不會報錯 (因為有檢查 if col in df.columns)
+    team_cols = ['home_team', 'away_team', 'pitcher_team', 'batter_team']
+    
+    for col in team_cols:
+        if col in df.columns:
+            # 使用 replace 將 ATH 替換為 OAK
+            # 如果資料量很大，這樣寫效率不錯
+            mask = df[col] == 'ATH'
+            if mask.any():
+                print(f"  - 修正欄位 {col}: {mask.sum()} 筆")
+                df.loc[mask, col] = 'OAK'
+                
     # 2. 建立每一個 r theta of hip 的 events 的 機率 table
     print("計算 r_theta 機率表...")
     rtheta_prob_tbl = df.groupby('r_theta')['events'].value_counts(normalize=True).reset_index()
@@ -111,4 +150,4 @@ if __name__ == "__main__":
     df_teams = assign_pitcher_batter_teams(df)
     df_teams.to_parquet(OUTPUT_PATH)
     print(f"已儲存最終資料：{OUTPUT_PATH}")
-#%%
+# %%

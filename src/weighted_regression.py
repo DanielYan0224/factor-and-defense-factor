@@ -9,9 +9,6 @@ from IPython.display import display as dp
 
 from expect_score import get_truncated_dataset_with_team, get_rtheta_prob_tbl
 
-weights_slg = {'single': 1.0, 'double': 2.0, 'triple': 3.0, 'home_run': 4.0}
-weights_avg = {'single': 1.0, 'double': 1.0, 'triple': 1.0, 'home_run': 1.0}
-
 
 
 def get_expected_value_map(weights: Dict[str, float]) -> pd.Series:

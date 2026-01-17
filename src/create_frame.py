@@ -76,7 +76,7 @@ df = df[mask]
 
 df.to_parquet(DATA_PROCESSED / "truncated_data.parquet")
 
-
+#%%
 
 
 df = pd.read_parquet(DATA_PROCESSED / "truncated_data.parquet")

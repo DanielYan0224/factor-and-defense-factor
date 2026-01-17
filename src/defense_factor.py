@@ -14,10 +14,10 @@ pd.set_option("display.max_colwidth", None)  # 每欄完整顯示
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_RAW = BASE_DIR / "data" / "raw"
-df = pd.read_csv(DATA_RAW / "statcast_2015.csv")  
+DATA_PROCESSED = BASE_DIR / "data" / "processed"
+df = pd.read_parquet(DATA_PROCESSED / "truncated_data_with_rtheta_team.parquet")
 
-dp(df.sample(5, random_state=42))
-#%%
+
 defense_data = team_fielding(2015, 2024, ind=1)
 
 def_col_mask = ['FP', 'Def', 'DRS', 'UZR', 'OAA', 'UZR/150', 'RngR', 'Range']
