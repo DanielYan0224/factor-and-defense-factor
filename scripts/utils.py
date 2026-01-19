@@ -94,7 +94,8 @@ def get_expected_bases_map(config: Config):
 def prepare_regression_data(df: pd.DataFrame, 
                             exp_map: pd.Series,
                             config: Config):
-    df_bip = df[df['description'] == 'hit_into_play'].copy()
+    #df_bip = df[df['description'] == 'hit_into_play'].copy()
+    df_bip = df[(df['description'] == 'hit_into_play') & (df['game_type'] == 'R')].copy()
 
     team_mapping = {'ATH': 'OAK'}
     df_bip['home_team'] = df_bip['home_team'].replace(team_mapping)
