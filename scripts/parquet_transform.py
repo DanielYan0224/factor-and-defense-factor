@@ -41,6 +41,7 @@ def main():
         'inning_topbot', 'home_team', 'away_team',
         'launch_speed', 'launch_angle']
     merged_df = merged_df[columns_filtered]
+    merged_df = merged_df[merged_df['game_type'] == 'R'] # added filter for regular season games
     add_rtheta_df = add_rtheta_features(merged_df)
     df_teams = assign_pitcher_batter_teams(add_rtheta_df)
     save_path = os.path.join(save_dir, parquet_filename)
