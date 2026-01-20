@@ -1,14 +1,17 @@
 #%%
-import pandas as pd
+# Standard Library
 import os
 from pathlib import Path
 
-from IPython.display import display as dp
+# Data Science
+import pandas as pd
 import numpy as np
+import joblib
 
+# Visualization
+from IPython.display import display as dp
 import matplotlib.pyplot as plt
-from matplotlib import colors as mcolors
-import joblib 
+from matplotlib import colors as mcolors 
 
 pd.set_option("display.max_rows", None)      # 列不要省略
 pd.set_option("display.max_columns", None)   # 欄不要省略
