@@ -118,3 +118,159 @@ def filter_defense_data(df: pd.DataFrame,
     # 4. 回傳篩選後的資料
     # 使用 .copy() 是好習慣，避免之後修改跳出 SettingWithCopyWarning 警告
     return df[final_mask].copy()
+
+def classify_pull_oppo(df):
+    """
+    輸入: 包含 'hc_x', 'hc_y', 'stand' 的 DataFrame
+    輸出: 增加 'spray_angle' 和 'batted_ball_direction' 欄位
+    """
+    
+    # --- 步驟 1: 先算出噴灑角度 (Spray Angle) ---
+    # 0度=中外野, 負值=左外野, 正值=右外野
+    hc_x_origin = 125.42
+    hc_y_origin = 198.27
+    df['location_x'] = (df['hc_x'] - hc_x_origin) * 2.495
+    df['location_y'] = (hc_y_origin - df['hc_y']) * 2.495
+    df['spray_angle'] = np.degrees(np.arctan2(df['location_x'], df['location_y']))
+    
+    # --- 步驟 2: 定義判斷標準 (Thresholds) ---
+    # 業界標準通常定為 15 度 或 22.5 度 (FanGraphs 用 15度)
+    PULL_THRESHOLD = 15.0  
+    
+    # --- 步驟 3: 建立分類邏輯 ---
+    # 使用 np.select 比較快 (比 apply 快很多)
+    conditions = [
+        # 情況 A: 右打者 (R)
+        (df['stand'] == 'R') & (df['spray_angle'] < -PULL_THRESHOLD), # 拉打 (左邊)
+        (df['stand'] == 'R') & (df['spray_angle'] > PULL_THRESHOLD),  # 推打 (右邊)
+        
+        # 情況 B: 左打者 (L)
+        (df['stand'] == 'L') & (df['spray_angle'] > PULL_THRESHOLD),  # 拉打 (右邊)
+        (df['stand'] == 'L') & (df['spray_angle'] < -PULL_THRESHOLD), # 推打 (左邊)
+    ]
+    
+    choices = ['Pull', 'Oppo', 'Pull', 'Oppo']
+    
+    # 如果都不符合上述條件，那就是 Center (Straight)
+    df['batted_ball_direction'] = np.select(conditions, choices, default='Center')
+    
+    return df
+
+def analyze_spray_distribution(df):
+    # 1. 確保有 spray_angle (沿用之前的公式)
+    # 如果還沒算，記得先呼叫 calculate_spray_angle(df)
+    
+    # 2. 定義拉打/推打門檻 (通常用 15度)
+    PULL_THRESHOLD = 15.0
+    
+    def get_quality(row):
+        angle = row['spray_angle']
+        stand = row['stand']
+        
+        # 邏輯判斷
+        if stand == 'L':
+            if angle > PULL_THRESHOLD: return 'Pull (Right)'  # 左打拉到右邊
+            elif angle < -PULL_THRESHOLD: return 'Oppo (Left)' # 左打推到左邊
+            else: return 'Center'
+        else: # stand == 'R'
+            if angle < -PULL_THRESHOLD: return 'Pull (Left)'  # 右打拉到左邊
+            elif angle > PULL_THRESHOLD: return 'Oppo (Right)' # 右打推到右邊
+            else: return 'Center'
+
+    # 3. 應用分類
+    df['contact_type'] = df.apply(get_quality, axis=1)
+    
+    # 4. 組合 "左右打 + 擊球型態"
+    df['strategy_class'] = df['stand'] + "-" + df['contact_type']
+    
+    return df
+
+def classify_pull_oppo(df):
+    """
+    輸入: 包含 'hc_x', 'hc_y', 'stand' 的 DataFrame
+    輸出: 增加 'spray_angle' 和 'batted_ball_direction' 欄位
+    """
+    
+    # --- 步驟 1: 先算出噴灑角度 (Spray Angle) ---
+    # 0度=中外野, 負值=左外野, 正值=右外野
+    hc_x_origin = 125.42
+    hc_y_origin = 198.27
+    df['location_x'] = (df['hc_x'] - hc_x_origin) * 2.495
+    df['location_y'] = (hc_y_origin - df['hc_y']) * 2.495
+    df['spray_angle'] = np.degrees(np.arctan2(df['location_x'], df['location_y']))
+    
+    # --- 步驟 2: 定義判斷標準 (Thresholds) ---
+    # 業界標準通常定為 15 度 或 22.5 度 (FanGraphs 用 15度)
+    PULL_THRESHOLD = 15.0  
+    
+    # --- 步驟 3: 建立分類邏輯 ---
+    # 使用 np.select 比較快 (比 apply 快很多)
+    conditions = [
+        # 情況 A: 右打者 (R)
+        (df['stand'] == 'R') & (df['spray_angle'] < -PULL_THRESHOLD), # 拉打 (左邊)
+        (df['stand'] == 'R') & (df['spray_angle'] > PULL_THRESHOLD),  # 推打 (右邊)
+        
+        # 情況 B: 左打者 (L)
+        (df['stand'] == 'L') & (df['spray_angle'] > PULL_THRESHOLD),  # 拉打 (右邊)
+        (df['stand'] == 'L') & (df['spray_angle'] < -PULL_THRESHOLD), # 推打 (左邊)
+    ]
+    
+    choices = ['Pull', 'Oppo', 'Pull', 'Oppo']
+    
+    # 如果都不符合上述條件，那就是 Center (Straight)
+    df['batted_ball_direction'] = np.select(conditions, choices, default='Center')
+    
+    return df
+
+def analyze_spray_distribution(df):
+    # 1. 確保有 spray_angle (沿用之前的公式)
+    # 如果還沒算，記得先呼叫 calculate_spray_angle(df)
+    
+    # 2. 定義拉打/推打門檻 (通常用 15度)
+    PULL_THRESHOLD = 15.0
+    
+    def get_quality(row):
+        angle = row['spray_angle']
+        stand = row['stand']
+        
+        # 邏輯判斷
+        if stand == 'L':
+            if angle > PULL_THRESHOLD: return 'Pull (Right)'  # 左打拉到右邊
+            elif angle < -PULL_THRESHOLD: return 'Oppo (Left)' # 左打推到左邊
+            else: return 'Center'
+        else: # stand == 'R'
+            if angle < -PULL_THRESHOLD: return 'Pull (Left)'  # 右打拉到左邊
+            elif angle > PULL_THRESHOLD: return 'Oppo (Right)' # 右打推到右邊
+            else: return 'Center'
+
+    # 3. 應用分類
+    df['contact_type'] = df.apply(get_quality, axis=1)
+    
+    # 4. 組合 "左右打 + 擊球型態"
+    df['strategy_class'] = df['stand'] + "-" + df['contact_type']
+    
+    return df
+
+
+def assign_pitcher_batter_teams(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    根據每一列的 inning_topbot 欄位，指派 pitcher_team 與 batter_team。
+    """
+    df = df.copy()
+    
+    # Vectorized assignment
+    is_top = df['inning_topbot'] == 'Top'
+    df['pitcher_team'] = np.where(is_top, df['home_team'], df['away_team'])
+    df['batter_team'] = np.where(is_top, df['away_team'], df['home_team'])
+    
+    # 調整欄位順序：將 pitcher/batter team 放到 away_team 後面
+    cols = list(df.columns)
+    if 'away_team' in cols:
+        insert_pos = cols.index('away_team') + 1
+        for col in ['pitcher_team', 'batter_team']:
+            if col in cols:
+                cols.remove(col)
+            cols.insert(insert_pos, col)
+            insert_pos += 1
+            
+    return df[cols]
