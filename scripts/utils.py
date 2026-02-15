@@ -180,3 +180,15 @@ def get_local_image_b64(logos_dir, team_name):
     with open(file_path, "rb") as image_file:
         encoded = base64.b64encode(image_file.read()).decode('utf-8').replace("\n", "").replace("\r", "")
     return f"data:image/png;base64,{encoded}"
+
+def standardize_data(df):
+    res = df.copy()
+    year_cols = df.columns[1:]
+    for col in year_cols:
+        res[col] = pd.to_numeric(res[col], errors='coerce')
+        temp_data = res[~res['Team'].str.lower().isin(['mean', 'std', 'nan'])][col]
+        m = temp_data.mean()
+        s = temp_data.std()
+
+        res[col] = 100 + 20 * (res[col] - m) / s
+    return round(res)

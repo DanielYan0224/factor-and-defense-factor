@@ -39,7 +39,8 @@ def main():
         'game_date', 'game_year', 
         'batter', 'pitcher', 'events', 'description', 
         'inning_topbot', 'home_team', 'away_team',
-        'launch_speed', 'launch_angle']
+        'launch_speed', 'launch_angle', 'bb_type',
+        'hc_x', 'hc_y', 'hit_location']
     merged_df = merged_df[columns_filtered]
     merged_df = merged_df[merged_df['game_type'] == 'R'] # added filter for regular season games
     add_rtheta_df = add_rtheta_features(merged_df)
