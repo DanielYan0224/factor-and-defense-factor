@@ -1,5 +1,8 @@
 #%%
 # Standard Library
+import concurrent
+import matplotlib.contour
+import matplotlib.contour
 from pathlib import Path
 
 # Data Science
@@ -25,42 +28,104 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_RAW = BASE_DIR / "data" / "raw"
 DATA_PROCESSED = BASE_DIR / "data" / "processed"
 
-defense_df = pd.read_parquet(DATA_RAW / "defense_data.parquet")
+offical_df = pd.read_csv(DATA_PROCESSED / "defense_data_transfer_truncated.csv")
 
-team_mapping = team_name_transfer_dict
+our_estimated_df = pd.read_csv(DATA_PROCESSED / "defense_factor_comparison.csv", header=[0,1])
 
-defense_transfer_data = transform_team_name(df = defense_df, 
-                        mapping_dict = team_mapping,
-                        target_col = "Team")
+def merge_defense_data(official_defense_df: pd.DataFrame, 
+                       our_estimated_df: pd.DataFrame, 
+                       metric: str = 'Def'):
+    """
+    official_long_df: 含有多個指標的長表格 ['FP', 'Def', 'DRS', 'DPS', 'UZR', 'OAA', 'UZR/150','RngR', 'Range']
+    ours_raw_df: 你的估計係數表格 (可以是 Wide format 或 Long format)
+    metric: 你想要比較的指標名稱 (預設為 'Def')
+    """
+    # --- 1. 定義安全的標準化函數 ---
+    def safe_normalize_20(col):
+        series = pd.to_numeric(col, errors='coerce')
+        # 如果整欄都是 NaN (例如 2015 的 OAA)，直接回傳全 NaN
+        if series.isnull().all() or series.std() == 0 or np.isnan(series.std()):
+            return pd.Series(np.nan, index=series.index)
+        return ((series - series.mean()) / series.std()) * 20 + 100
 
-defense_transfer_data.to_csv(DATA_PROCESSED / "defense_data_transfer.csv", index=False)
-#%%
-defense_transfer_data = pd.read_csv(DATA_PROCESSED / "defense_data_transfer.csv")
-dp(defense_transfer_data.head())
+    # --- 2. 處理官方數據 ---
+    # 萃取目標指標
+    off_subset = official_defense_df[['Team', 'game_year', metric]].copy()
+    off_df = off_subset.pivot(index='Team', columns='game_year', values=metric)
+    
+    # 執行標準化 (不直接轉 int，避免 NaN 報錯)
+    off_norm_df = off_df.apply(safe_normalize_20, axis=0).round()
+
+    # --- 3. 處理你的估計數據 ---
+    # 注意：這裡的 iloc 截取邏輯必須確保 Team 是第一欄
+    our_data = our_estimated_df.iloc[:, np.r_[0, 11:len(our_estimated_df.columns)]].copy()
+    our_data.columns = np.r_[["Team"], [str(year) for year in range(2015, 2025)]]
+    
+    # 統一縮寫並設為 Index
+    our_data['Team'] = our_data['Team'].str.strip().replace({"AZ": "ARI", "AZ ": "ARI"})
+    our_data = our_data.set_index('Team')
+    
+    # 執行標準化
+    ours_norm_df = our_data.apply(safe_normalize_20, axis=0).round()
+
+    # --- 4. 合併表格 ---
+    # 統一將欄位名轉為字串
+    ours_norm_df.columns = [str(col) for col in ours_norm_df.columns]
+    off_norm_df.columns = [str(col) for col in off_norm_df.columns]
+
+    # 合併前先將 Team 轉為字串欄位，避免 dtype 衝突 (int64 vs object)
+    left = ours_norm_df.reset_index()
+    left['Team'] = left['Team'].astype(str)
+    
+    right = off_norm_df.reset_index()
+    right['Team'] = right['Team'].astype(str)
+
+    comparison_table = pd.merge(
+        left, 
+        right, 
+        on='Team', 
+        suffixes=('_Ours', '_Official')
+    )
+
+    # --- 5. 動態排序 (只排存在的欄位) ---
+    years = [str(yr) for yr in range(2015, 2025)]
+    ours_cols = [f"{yr}_Ours" for yr in years if f"{yr}_Ours" in comparison_table.columns]
+    off_cols = [f"{yr}_Official" for yr in years if f"{yr}_Official" in comparison_table.columns]
+    
+    # 最終選擇欄位：只選取「非全空」的欄位
+    final_order = ['Team'] + off_cols + ours_cols
+    comparison_table = comparison_table[final_order]
+
+    for col in comparison_table.columns:
+        if col != 'Team':
+            comparison_table[col] = pd.to_numeric(comparison_table[col], errors='coerce').astype('Int64')
+
+    comparison_table = comparison_table.rename(columns={'Team': f'Team ({metric})'})
+
+    return comparison_table
 
 
-#%%
-defense_transfer_data.to_csv(DATA_PROCESSED / "defense_data_transfer_truncated.csv", index=False)
+for def_metric in ['FP', 'Def', 'DRS', 'DPS', 'UZR', 'OAA', 'UZR/150', 'RngR', 'Range']:
+    try:
+        print(f"正在處理指標: {def_metric}...")
+        
+        # 執行合併
+        defense_df = merge_defense_data(
+            official_defense_df = offical_df, 
+            our_estimated_df = our_estimated_df,
+            metric = def_metric
+        )
+        
+        # 儲存檔案
+        # 建議確保 DATA_PROCESSED 路徑存在
+        output_path = DATA_PROCESSED / f"defense_factor_{def_metric.replace('/', '_')}.csv"
+        
+        # index=False 是對的，因為 Team 已經在欄位裡了
+        defense_df.to_csv(output_path, index=False)
+        
+        print(f"✅ {def_metric} 儲存成功！")
+        
+    except Exception as e:
+        print(f"❌ {def_metric} 處理失敗，原因: {e}")
 
-def_cols = ['FP', 'Def', 'DRS', 'UZR', 'OAA', 'UZR/150', 'RngR', 'Range']
-
-defense_transfer_truncated_data = filter_defense_data(df = defense_transfer_data, 
-                                                    target_cols = def_cols)
-
-defense_transfer_truncated_data.to_csv(DATA_PROCESSED / "defense_data_transfer_truncated.csv", index=False)
-#%%
-defense_player_df = fielding_stats(2023, qual=None)
-
-def_cols = ['FP', 'Def', 'DRS', 'UZR', 'OAA', 'UZR/150', 'RngR', 'Range']
-
-defense_pl_truncated_df = defense_player_df[['Name', 'Team', 'Season'] + def_cols]
-dp(defense_pl_truncated_df.sample(10))
-#%%
-from pybaseball import statcast_outs_above_average
-
-# All fielders with at least 50 fielding attempts in 2019
-data = statcast_outs_above_average(2023, "all", 0)
-df = data[data['player_id'] == 657557]
-
-dp(df)
-#%%
+# %%
