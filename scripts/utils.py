@@ -154,6 +154,14 @@ def run_year_regression(data, year):
     std_park = np.std(list(beta_park_centered.values()))
     std_def = np.std(list(beta_def_centered.values()))
     
+    beta_park = {}
+    for k, v in beta_park_centered.items():
+        beta_park[k] = v
+
+    beta_defense = {}
+    for k, v in beta_def_centered.items():
+        beta_defense[k] = -v
+
     park_indices = {}
     for k, v in beta_park_centered.items():
         z = v / std_park if std_park > 0 else 0
@@ -167,6 +175,8 @@ def run_year_regression(data, year):
     return {
         'year': year,
         'intercept': adj_intercept,
+        'beta_park': beta_park,
+        'beta_defense': beta_defense,
         'park_factors': park_indices,
         'defense_factors': defense_indices,
         'park_std': std_park, 
