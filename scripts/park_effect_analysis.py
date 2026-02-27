@@ -63,56 +63,6 @@ valid_df['residual'] = valid_df['real_metric'] - valid_df['expected_metric']
 
 #%%
 
-target_df = valid_df[(valid_df['game_year'] == 2024)]
-target_df['YN_STL_home'] = target_df['home_team'].apply(lambda x: 1 if x == 'STL' else 0)
-stl_df = target_df[(target_df['home_team'] == 'STL') | (target_df['away_team'] == 'STL')]
-
-stl_games = stl_df.drop_duplicates(subset=['game_date', 'home_team', 'away_team']).copy()
-
-stl_games['venue'] = np.where(stl_games['home_team'] == 'STL', 'Home', 'Away')
-stl_games['opponent'] = np.where(stl_games['home_team'] == 'STL', stl_games['away_team'], stl_games['home_team'])
-
-game_counts = stl_games.groupby(['venue', 'opponent']).size().reset_index(name='game_count')
-
-summary_table = game_counts.pivot_table(
-    index='opponent', 
-    columns='venue', 
-    values='game_count', 
-    aggfunc='sum', 
-    fill_value=0
-)
-
-# 為了美觀，可以加上總計欄位
-summary_table['Total'] = summary_table['Home'] + summary_table['Away']
-summary_table = summary_table.sort_values(by='Total', ascending=False)
-
-
-#%%
-
-# --- 診斷代碼 ---
-# 1. 檢查最原始的 df (還沒做任何 dropna 或 hit_into_play 篩選之前)
-raw_stl_2024 = df[
-    (df['game_year'] == 2024) & 
-    (df['game_type'] == 'R') & 
-    ((df['home_team'] == 'STL') | (df['away_team'] == 'STL'))
-]
-
-# 如果資料裡有 game_pk (比賽唯一 ID)，請優先使用
-if 'game_pk' in raw_stl_2024.columns:
-    total_raw_games = raw_stl_2024['game_pk'].nunique()
-    print(f"[診斷] 原始檔案中 STL 在 2024 年的總場次為: {total_raw_games} 場")
-    
-    # 修改您的去重邏輯，改用 game_pk
-    stl_games = stl_df.drop_duplicates(subset=['game_pk']).copy()
-else:
-    # 沒 game_pk 的話退而求其次
-    total_raw_games = len(raw_stl_2024.drop_duplicates(subset=['game_date', 'home_team', 'away_team']))
-    print(f"[診斷] 原始檔案中 STL 在 2024 年的總場次(依日期算)為: {total_raw_games} 場")
-
-
-
-#%%
-
 valid_df['is_batting_home'] = (valid_df['batter_team'] == valid_df['home_team'])
 
 batting_stats = valid_df.groupby(['game_year', 'batter_team', 'is_batting_home'])['residual'].mean().unstack()
