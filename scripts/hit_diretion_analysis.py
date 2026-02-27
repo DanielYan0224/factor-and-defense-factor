@@ -43,6 +43,8 @@ filtered_df['is_left_fly'] = (filtered_df['FLG_flyball'] == 'left_fly_ball')
 filtered_df['is_right_fly'] = (filtered_df['FLG_flyball'] == 'right_fly_ball')
 
 
+#%%
+
 summary_df = filtered_df.groupby(['game_year', 'home_team']).agg(
     rate_left_flyball=('is_left_fly', 'mean'),   
     rate_right_flyball=('is_right_fly', 'mean'), 
