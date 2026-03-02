@@ -67,7 +67,7 @@ df = pd.read_parquet(merged_path)
 
 
 mask = ['pitch_type', 'game_type',
-        'game_date', 'game_year', 
+        'game_date', 'game_year', 'game_pk',
         'batter', 'pitcher', 'events', 'description', 
         'inning_topbot', 'home_team', 'away_team',
         'launch_speed', 'launch_angle']
@@ -76,14 +76,16 @@ df = df[mask]
 
 df.to_parquet(DATA_PROCESSED / "truncated_data.parquet")
 
+dp(df.head())
 #%%
 
 
-df = pd.read_parquet(DATA_PROCESSED / "truncated_data.parquet")
+# df = pd.read_parquet(DATA_PROCESSED / "truncated_data.parquet")
 
 # judge_df = df[(df['batter'] == 592450)&
-#             (df['game_year'] == 2018)]
+#             (df['game_year'] == 2024)]
 # print(judge_df['events'].value_counts())
+
 def add_rtheta_features(df):
     """
     計算 launch_speed 和 launch_angle 的分箱，並新增 r_theta 欄位。

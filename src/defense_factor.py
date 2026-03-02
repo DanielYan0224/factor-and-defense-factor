@@ -1,9 +1,8 @@
 #%%
 # Standard Library
-import concurrent
-import matplotlib.contour
-import matplotlib.contour
+import matplotlib.pyplot as plt
 from pathlib import Path
+import os
 
 # Data Science
 import pandas as pd
@@ -128,4 +127,87 @@ for def_metric in ['FP', 'Def', 'DRS', 'DPS', 'UZR', 'OAA', 'UZR/150', 'RngR', '
     except Exception as e:
         print(f"❌ {def_metric} 處理失敗，原因: {e}")
 
-# %%
+#%%
+import matplotlib.pyplot as plt
+from pathlib import Path
+
+# Data Science
+import pandas as pd
+import numpy as np
+
+# Visualization
+from IPython.display import display as dp
+
+# Domain / Third Party
+from pybaseball import team_fielding, team_ids, fielding_stats
+
+# Local Modules
+from expect_score import get_truncated_dataset_with_team
+from utils import team_name_transfer_dict, transform_team_name, filter_defense_data
+
+pd.set_option("display.max_rows", None)      # 列不要省略
+pd.set_option("display.max_columns", None)   # 欄不要省略
+pd.set_option("display.width", None)         # 不限制總寬度
+pd.set_option("display.max_colwidth", None)  # 每欄完整顯示
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_RAW = BASE_DIR / "data" / "raw"
+DATA_PROCESSED = BASE_DIR / "data" / "processed"
+PNG_DIR = BASE_DIR / "png"
+
+# ['FP', 'Def', 'DRS', 'DPS', 'UZR', 'OAA', 'UZR/150', 'RngR', 'Range']
+def_metric = 'UZR/150'
+def_metric = def_metric.replace('/', '_')
+
+defense_df = pd.read_csv(DATA_PROCESSED / f"defense_factor_{def_metric}.csv")
+
+
+years = [str(yr) for yr in range(2015, 2025)]
+teams = sorted(defense_df.iloc[:, 0].unique()) 
+
+output_dir = PNG_DIR / f"{def_metric}"
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
+for team in teams:
+    # 1. 提取該球隊的數據
+    team_row = defense_df[defense_df.iloc[:, 0] == team].iloc[0]
+    
+    # 我們利用欄位名稱來精確抓取，這樣最保險
+    years = [str(yr) for yr in range(2015, 2025)]
+    
+    ours_values = [team_row[f"{yr}_Ours"] for yr in years]
+    off_values = [team_row[f"{yr}_Official"] for yr in years]
+    
+    # 轉成 float 才能繪圖 (Int64 會自動處理 NaN)
+    ours_values = np.array(ours_values, dtype=float)
+    off_values = np.array(off_values, dtype=float)
+
+    # 3. 繪圖
+    plt.figure(figsize=(10, 6))
+    
+    # 畫出我們的估計線 (實線)
+    plt.plot(years, ours_values, marker='o', linestyle='-', linewidth=2, 
+             color='#1f77b4', label='Our Estimated')
+    
+    # 畫出官方指標線 (虛線)
+    plt.plot(years, off_values, marker='s', linestyle='--', linewidth=2, 
+             color='#ff7f0e', label=f'Official {def_metric}')
+    
+    # 4. 裝飾圖表
+    plt.axhline(100, color='black', linewidth=0.8, linestyle=':', alpha=0.5) # 100 基準線
+    plt.title(f'{team} - {def_metric} Comparison (2015-2024)', fontsize=16, fontweight='bold')
+    plt.xlabel('Year', fontsize=12)
+    plt.ylabel('Normalized Score (Mean=100)', fontsize=12)
+    plt.ylim(40, 160) # 固定範圍讓 30 張圖具備可比性
+    plt.grid(True, alpha=0.3, linestyle=':')
+    plt.legend()
+    
+    # 5. 儲存
+    save_path = output_dir / f"{team}_{def_metric}.png"
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    plt.close() # 務必關閉以釋放記憶體
+    
+    print(f"✅ 已儲存: {save_path}")
+
+#%%

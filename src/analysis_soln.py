@@ -12,7 +12,7 @@ from team_colors import mlb_colors
 # 1. 路徑設定 (保持不變)
 # ---------------------------------------------------------
 LOGOS_DIR = "/Users/yantianli/factor-and-defense-factor/logos"
-SOLN_PATH = "/Users/yantianli/factor-and-defense-factor/estimated_factors.csv"
+SOLN_PATH = "/Users/yantianli/factor-and-defense-factor/estimated_factors_via_slg.csv"
 
 # ---------------------------------------------------------
 # 2. 讀取資料與處理 (關鍵修改在這邊!)
@@ -25,7 +25,7 @@ regression_df["Team"] = regression_df["Team"].str.strip()
 regression_df.sort_values(by="Year", inplace=True)
 
 
-linechart_y = "ParkFactor" #DefenseFactor
+linechart_y = "DefenseFactor" #DefenseFactor
 
 # ---------------------------------------------------------
 # 3. 圖片讀取函式 (加入防止換行符號的處理)

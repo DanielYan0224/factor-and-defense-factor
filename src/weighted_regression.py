@@ -196,8 +196,8 @@ if __name__ == "__main__":
     }
 
     # 2. select weights
-    index = "avg"  
-    chosen_weights = WEIGHT_dict[index]
+    hit_index = "slg"  
+    chosen_weights = WEIGHT_dict[hit_index]
 
     # 3. loading data
     df = get_truncated_dataset_with_team()
@@ -238,7 +238,7 @@ if __name__ == "__main__":
             })
             
     out_df = pd.DataFrame(output_rows)
-    save_path = f"/Users/yantianli/factor-and-defense-factor/estimated_factors_via_{index}.csv"
+    save_path = f"/Users/yantianli/factor-and-defense-factor/estimated_factors_via_{hit_index}.csv"
     out_df.to_csv(save_path, index=False)
     print(f"Successfully saved estimated factors to {save_path}")
     
